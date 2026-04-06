@@ -1,5 +1,72 @@
-<section class="page-copy">
-  <p class="eyebrow">Generate</p>
-  <h1>Create quiz</h1>
-  <p class="lead">Base route ready for the quiz generation flow.</p>
+<section class="generate-page">
+  <header class="page-copy">
+    <p class="eyebrow">Generate</p>
+    <h1>Create quiz</h1>
+    <p class="lead">
+      Enter a topic, choose a difficulty, and preview a quiz before the Hugging Face integration arrives.
+    </p>
+  </header>
+
+  <div class="generate-grid">
+    <section class="panel form-panel">
+      <label class="field">
+        <span>Topic</span>
+        <input
+          type="text"
+          [value]="topic()"
+          (input)="setTopic($any($event.target).value)"
+          placeholder="e.g. World War II, Python basics"
+        >
+      </label>
+
+      <fieldset class="field difficulty-field">
+        <legend>Difficulty</legend>
+        <div class="difficulty-options">
+          <button type="button" class="chip" [class.active]="difficulty() === 'easy'" (click)="setDifficulty('easy')">Easy</button>
+          <button type="button" class="chip" [class.active]="difficulty() === 'normal'" (click)="setDifficulty('normal')">Normal</button>
+          <button type="button" class="chip" [class.active]="difficulty() === 'hard'" (click)="setDifficulty('hard')">Hard</button>
+        </div>
+      </fieldset>
+
+      <button type="button" class="generate-button" [disabled]="!canGenerate()" (click)="generateQuiz()">
+        <span *ngIf="!isGenerating(); else loadingState">Generate quiz</span>
+        <ng-template #loadingState>Generating...</ng-template>
+      </button>
+
+      <p class="status-message">{{ statusMessage() }}</p>
+    </section>
+
+    <section class="panel preview-panel">
+      <div class="preview-header">
+        <div>
+          <p class="preview-kicker">Live preview</p>
+          <h2>{{ generatedQuiz()?.topic || 'Waiting for a topic' }}</h2>
+        </div>
+        <span class="difficulty-badge">{{ generatedQuiz()?.difficulty || difficulty() }}</span>
+      </div>
+
+      <ng-container *ngIf="generatedQuiz(); else emptyState">
+        <div class="preview-list">
+          <article class="question-card" *ngFor="let question of generatedQuiz()?.questions; let index = index">
+            <span class="question-index">Q{{ index + 1 }}</span>
+            <div>
+              <h3>{{ question.question }}</h3>
+              <ul>
+                <li *ngFor="let option of question.options; let optionIndex = index">
+                  <span class="option-marker">{{ optionIndex + 1 }}</span>
+                  <span>{{ option }}</span>
+                </li>
+              </ul>
+            </div>
+          </article>
+        </div>
+      </ng-container>
+
+      <ng-template #emptyState>
+        <p class="empty-state">
+          Your generated quiz will appear here. The local generator currently creates a 5-question preview.
+        </p>
+      </ng-template>
+    </section>
+  </div>
 </section>

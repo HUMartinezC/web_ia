@@ -36,7 +36,7 @@ Este documento es tu **referencia principal y permanente** durante todo el desar
 - [x] Scaffold del proyecto Angular creado
 - [x] Estructura de carpetas implementada
 - [x] Sidebar y layout base
-- [ ] Página `/generate` funcional
+- [x] Página `/generate` funcional
 - [ ] Integración Hugging Face Modelo 1 (generación)
 - [ ] Página `/quiz/:id` funcional
 - [ ] Persistencia en `localStorage`

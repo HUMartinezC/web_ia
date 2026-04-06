@@ -20,3 +20,10 @@
 - Prompt: Continue with point 3 and build the sidebar and layout base.
 - Result: Added the persistent sidebar shell and placeholder section routes.
 - Justification: The main navigation and visual frame need to exist before page-specific work.
+
+## 2026-04-06 - Phase 4
+
+- Tool: Copilot Chat
+- Prompt: Continue with point 4 and make the generate page functional without Hugging Face yet.
+- Result: Added topic input, difficulty selector, loading state, validation, and local quiz preview generation.
+- Justification: The generation screen must be usable before integrating the remote model.

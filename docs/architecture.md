@@ -20,3 +20,8 @@ models, layout, pages, and shared UI can be added without reshaping the tree lat
 
 The current shell uses a persistent sidebar and a content frame around the router outlet.
 This keeps navigation stable while the feature pages are built in later phases.
+
+## Generate page behavior
+
+The generate screen currently uses local state and a simulated delay to preview quiz output.
+This keeps the UI functional before wiring the Hugging Face API in the next phase.
