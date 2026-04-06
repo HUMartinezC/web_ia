@@ -1,0 +1,46 @@
+:root {
+  color-scheme: dark;
+  --bg: #1a1f2e;
+  --surface: #23283b;
+  --surface-strong: #2c3147;
+  --text: #f4f5f7;
+  --muted: #a7aec5;
+  --primary: #f5e642;
+  --accent: #4ecdc4;
+  --danger: #ff6b6b;
+  --border: rgba(255, 255, 255, 0.12);
+  --shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+  --radius-lg: 24px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+  font-family: Inter, Arial, sans-serif;
+}
+
+html,
+body {
+  min-height: 100%;
+  margin: 0;
+  background:
+    radial-gradient(circle at top, rgba(245, 230, 66, 0.08), transparent 28%),
+    linear-gradient(180deg, #141827 0%, #1a1f2e 100%);
+  color: var(--text);
+}
+
+body {
+  min-height: 100vh;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+a {
+  color: inherit;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}

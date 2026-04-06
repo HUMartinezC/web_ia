@@ -1,0 +1,7 @@
+node_modules
+dist
+.angular
+.vscode
+coverage
+npm-debug.log*
+package-lock.json
