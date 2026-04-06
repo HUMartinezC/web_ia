@@ -12,7 +12,7 @@ Diseñar, desarrollar y presentar una página web usando mayoritariamente IA (vi
 
 - Es estilo visual será algo simple pero divertido. (desarróllalo)
 
-- La web se desplegará en Github Pages.
+- La web se desplegará en Vercel.
 
 - Todo el desarrollo, en principio, será realizado por una IA.
 

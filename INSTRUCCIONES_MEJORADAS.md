@@ -1,6 +1,6 @@
 # 📋 QuizAI — Instrucciones de Desarrollo
 
-> Web educacional generadora de cuestionarios con IA, construida mediante *vibe coding* y desplegada en GitHub Pages.
+> Web educacional generadora de cuestionarios con IA, construida mediante *vibe coding* y desplegada en Vercel.
 
 ---
 
@@ -45,9 +45,9 @@ Este documento es tu **referencia principal y permanente** durante todo el desar
 - [x] Página `/stats` funcional
 - [x] Generación de imagen por quiz integrada
 - [x] Historial en modo galería (imagen + título)
-- [ ] Assets de IA integrados (imágenes/vídeo)
-- [ ] Despliegue en GitHub Pages
-- [ ] Documentación `docs/` completa
+- [x] Assets de IA integrados (imágenes/vídeo)
+- [x] Despliegue en Vercel
+- [x] Documentación `docs/` completa
 
 ---
 
@@ -67,7 +67,7 @@ Cada quiz debe incluir ademas una **imagen generada por IA** basada en su conten
 | Estado | Signals nativos de Angular + `localStorage` |
 | Estilos | CSS custom properties + Angular animations |
 | IA | Hugging Face Inference API (2 modelos) |
-| Despliegue | GitHub Pages vía `angular-cli-ghpages` |
+| Despliegue | Vercel (hosting estático + funciones serverless) |
 | Documentación | Markdown en `docs/` |
 
 ### Decisiones de arquitectura
@@ -234,20 +234,20 @@ El estilo debe ser **"retro-escolar divertido"**: evoca cuadernos de clase, colo
 
 ---
 
-## 🚀 Despliegue en GitHub Pages
+## 🚀 Despliegue en Vercel
 
 ```bash
-# Instalar herramienta de despliegue
-npm install -g angular-cli-ghpages
-
-# Build de producción con base-href correcto
-ng build --base-href /nombre-del-repo/
-
-# Desplegar
-npx angular-cli-ghpages --dir=dist/nombre-del-proyecto/browser
+# Build local de validación
+npm run build
 ```
 
-Configurar en `angular.json` el `outputPath` y el `baseHref` del repositorio antes de hacer el build.
+Configuración recomendada:
+
+- Conectar el repositorio en Vercel.
+- Build Command: `npm run build`
+- Output Directory: `dist/quizai/browser`
+- Variable de entorno: `HF_API_TOKEN`
+- Usar la función serverless `api/hf.js` para proxy seguro de Hugging Face (evita exponer el token en frontend).
 
 ---
 
@@ -267,9 +267,9 @@ Cada archivo debe completarse **durante** el desarrollo, no al final.
 
 ## ✅ Checklist de Entregables
 
-- [ ] Enlace a la web funcional en GitHub Pages
+- [x] Enlace a la web funcional en Vercel
 - [ ] Repositorio público con historial de commits descriptivos
-- [ ] Carpeta `docs/` completa
+- [x] Carpeta `docs/` completa
 - [ ] Al menos 2 modelos de Hugging Face integrados
 - [ ] Imagen generada por IA para cada quiz y mostrada en el historial
 - [ ] Historial presentado en formato galería (imagen + título)

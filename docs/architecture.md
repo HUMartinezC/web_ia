@@ -1,58 +1,92 @@
-# Architecture Notes
+# Notas de Arquitectura
 
-## Initial decisions
+## Decisiones iniciales
 
-- Angular 21 with standalone components.
-- Router enabled from the bootstrap layer.
-- `provideHttpClient()` and `provideAnimations()` configured from `app.config.ts`.
-- No state library added in the scaffold.
+- Angular 21 con standalone components.
+- Router habilitado desde la capa de bootstrap.
+- `provideHttpClient()` y `provideAnimations()` configurados desde `app.config.ts`.
+- Sin librería de estado externa: solo APIs nativas de Angular.
 
-## Scope of this phase
+## Estructura y organización
 
-This phase only establishes the project shell and a minimal landing route.
+La estructura de carpetas se creó antes de desarrollar funcionalidades para mantener una base estable:
 
-## Folder structure
+- `core/` para servicios y modelos.
+- `layout/` para shell y navegación.
+- `pages/` para vistas principales.
+- `shared/` para componentes reutilizables.
 
-The app folders were created in advance of implementation so that services,
-models, layout, pages, and shared UI can be added without reshaping the tree later.
+Este enfoque evitó refactors tempranos cuando se añadieron generación, historial y métricas.
 
-## Layout shell
+## Shell de aplicación
 
-The current shell uses a persistent sidebar and a content frame around the router outlet.
-This keeps navigation stable while the feature pages are built in later phases.
+La app usa un layout persistente con sidebar y área de contenido (`router-outlet`).
 
-## Generate page behavior
+Ventajas:
 
-The generate screen is preview-only: it builds a quiz and starts a route-based session.
-Quiz resolution is handled in `/quiz/:id` to keep generation and answering concerns separated.
+- Navegación consistente en todas las rutas.
+- Menor complejidad al construir páginas por fases.
+- Mejor base responsive para móvil y escritorio.
 
-## Hugging Face integration
+## Flujo funcional
 
-The app uses the Hugging Face Router endpoint (chat-completions) with configurable model ids and bearer token.
-If the API is disabled or unavailable, the service falls back to a deterministic local quiz builder so the UI remains usable.
+Se separaron claramente dos responsabilidades:
 
-Generation follows a two-step pipeline:
-- Model 1 generates quiz questions/options/correct answers.
-- Model 2 refines quiz metadata (`title` and `category`) for better naming consistency.
+- `generate`: creación y previsualización del quiz.
+- `quiz/:id`: resolución interactiva pregunta por pregunta.
 
-If Model 2 fails, metadata falls back to deterministic naming and `General` category.
+La separación reduce acoplamiento y simplifica el estado de cada pantalla.
 
-For visual assets, the app now calls `stabilityai/stable-diffusion-xl-base-1.0` (HF text-to-image)
-to generate one cover image per quiz. The returned image blob is resized, encoded to base64,
-and persisted inside the quiz session to support offline gallery rendering in History.
+## Integración con Hugging Face
 
-## Quiz sessions
+La integración principal usa Hugging Face Router con tres capacidades:
 
-`QuizSessionService` stores quiz sessions in `localStorage` and restores progress by id.
-This keeps selected answers, navigation index, submitted state, and score when users change routes.
+- Generación de preguntas (modelo de chat).
+- Clasificación de categorías (zero-shot).
+- Generación de imagen por quiz (text-to-image).
 
-## History page
+### Pipeline de generación
 
-The history screen reads persisted sessions and supports filtering plus session lifecycle actions:
-continue, repeat (duplicate), and delete.
+1. Se generan preguntas y respuestas.
+2. Se refina metadato del quiz (`title`, `category`, `categories`).
+3. Se genera portada visual del quiz.
 
-## Stats page
+Si alguna fase falla, se aplican fallbacks para mantener la experiencia utilizable.
 
-The stats screen aggregates completed sessions to compute total quizzes, global accuracy,
-current streak, best streak, and category-level performance bars.
-Category grouping first uses saved quiz metadata and only falls back to topic keyword heuristics for older sessions.
+## Persistencia y sesiones
+
+`QuizSessionService` guarda sesiones en `localStorage` y permite:
+
+- Continuar quizzes incompletos.
+- Repetir quizzes finalizados.
+- Restaurar estado de respuestas, progreso y puntuación.
+
+También incluye normalización/migración para sesiones antiguas.
+
+## Historial
+
+La vista de historial trabaja como galería visual:
+
+- Tarjetas con imagen, título, fecha, dificultad y estado.
+- Filtros por texto, estado y dificultad.
+- Acciones de continuar, repetir, eliminar y borrar todo.
+
+## Métricas
+
+La página de estadísticas calcula sobre sesiones completadas:
+
+- Total de quizzes.
+- Precisión global.
+- Racha actual y récord.
+- Rendimiento por categoría.
+
+Esto evita sesgos al excluir intentos incompletos.
+
+## Despliegue y seguridad
+
+El despliegue objetivo es Vercel.
+
+- Frontend estático: `dist/quizai/browser`.
+- Proxy serverless: `api/hf.js`.
+
+El token de Hugging Face (`HF_API_TOKEN`) se mantiene en variables de entorno de Vercel y no en el bundle frontend.
