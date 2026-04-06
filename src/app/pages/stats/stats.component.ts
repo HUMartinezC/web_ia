@@ -10,6 +10,10 @@ interface CategoryStat {
   sessions: number;
 }
 
+interface CategoryLegendItem extends CategoryStat {
+  color: string;
+}
+
 @Component({
   selector: 'app-stats',
   standalone: true,
@@ -63,6 +67,13 @@ export class StatsComponent {
       .sort((a, b) => b.accuracy - a.accuracy);
   });
 
+  readonly categoryLegend = computed<CategoryLegendItem[]>(() =>
+    this.categoryStats().map((item) => ({
+      ...item,
+      color: this.getCategoryColor(item.category)
+    }))
+  );
+
   constructor() {
     this.reloadStats();
   }
@@ -73,6 +84,28 @@ export class StatsComponent {
 
   trackByCategory(index: number, item: CategoryStat): string {
     return `${item.category}-${index}`;
+  }
+
+  getCategoryColor(category: string): string {
+    const normalized = this.normalizeText(category);
+
+    if (normalized.includes('historia')) {
+      return '#e8ff1a';
+    }
+
+    if (normalized.includes('tecnologia') || normalized.includes('programacion') || normalized.includes('datos')) {
+      return '#4ecdc4';
+    }
+
+    if (normalized.includes('ciencias') || normalized.includes('matematicas')) {
+      return '#ff7a7a';
+    }
+
+    if (normalized.includes('arte') || normalized.includes('filosofia') || normalized.includes('lengua')) {
+      return '#a975ff';
+    }
+
+    return '#8fa0bf';
   }
 
   private calculateStreak(mode: 'current' | 'best'): number {

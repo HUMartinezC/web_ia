@@ -146,4 +146,16 @@ export class QuizComponent {
   goToGenerate(): void {
     this.router.navigate(['/generate']);
   }
+
+  difficultyLabel(value: 'easy' | 'normal' | 'hard'): string {
+    if (value === 'easy') {
+      return 'Facil';
+    }
+
+    if (value === 'hard') {
+      return 'Dificil';
+    }
+
+    return 'Normal';
+  }
 }

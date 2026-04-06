@@ -34,8 +34,8 @@ export class GenerateComponent {
   readonly difficulty = signal<Difficulty>('normal');
   readonly isGenerating = signal(false);
   readonly generatedQuiz = signal<GeneratedQuiz | null>(null);
-  readonly statusMessage = signal('Ready to generate a quiz preview.');
-  readonly modelStatus = signal('Model: local fallback ready');
+  readonly statusMessage = signal('Listo para generar una vista previa del quiz.');
+  readonly modelStatus = signal('Modelo: modo local listo');
   readonly detectedQuestionCount = signal(5);
   readonly activeSessionId = signal<string | null>(null);
 
@@ -63,15 +63,15 @@ export class GenerateComponent {
     const questionCount = this.extractQuestionCount(topicInput);
 
     if (topic.length < 3 && topicInput.length < 3) {
-      this.statusMessage.set('Enter a topic with at least 3 characters.');
+      this.statusMessage.set('Ingresa un tema de al menos 3 caracteres.');
       return;
     }
 
     this.generatedQuiz.set(null);
     this.activeSessionId.set(null);
     this.isGenerating.set(true);
-    this.statusMessage.set('Generating quiz with Hugging Face...');
-    this.modelStatus.set('Model: generating...');
+    this.statusMessage.set('Generando quiz con Hugging Face...');
+    this.modelStatus.set('Modelo: generando...');
     this.persistSession();
 
     try {
@@ -81,7 +81,7 @@ export class GenerateComponent {
         questionCount
       });
 
-      this.statusMessage.set('Generating cover image...');
+      this.statusMessage.set('Generando portada...');
 
       const coverImageBase64 = await this.huggingFaceService.generateQuizImageBase64(generatedQuiz);
       const quiz: GeneratedQuiz = {
@@ -94,16 +94,16 @@ export class GenerateComponent {
       this.generatedQuiz.set(quiz);
       this.activeSessionId.set(session.id);
       this.detectedQuestionCount.set(quiz.questions.length);
-      this.modelStatus.set(quiz.source === 'huggingface' ? `Model: ${quiz.model}` : 'Model: local fallback ready');
+      this.modelStatus.set(quiz.source === 'huggingface' ? `Modelo: ${quiz.model}` : 'Modelo: modo local listo');
       this.statusMessage.set(
         quiz.source === 'huggingface'
-          ? `Quiz generated and named with Hugging Face (${quiz.questions.length} questions).`
-          : `Hugging Face is not configured, so the local fallback preview was used (${quiz.questions.length} questions).`
+          ? `Quiz generado correctamente (${quiz.questions.length} preguntas).`
+          : `Hugging Face no esta configurado, se uso el modo local (${quiz.questions.length} preguntas).`
       );
       this.persistSession();
     } catch (error) {
-      this.statusMessage.set(error instanceof Error ? error.message : 'Unable to generate quiz.');
-      this.modelStatus.set('Model: generation failed');
+      this.statusMessage.set(error instanceof Error ? error.message : 'No se pudo generar el quiz.');
+      this.modelStatus.set('Modelo: fallo de generacion');
       this.persistSession();
     } finally {
       this.isGenerating.set(false);
@@ -118,6 +118,18 @@ export class GenerateComponent {
     }
 
     this.router.navigate(['/quiz', sessionId]);
+  }
+
+  difficultyLabel(value: Difficulty): string {
+    if (value === 'easy') {
+      return 'Facil';
+    }
+
+    if (value === 'hard') {
+      return 'Dificil';
+    }
+
+    return 'Normal';
   }
 
   private extractQuestionCount(input: string): number {
@@ -179,8 +191,8 @@ export class GenerateComponent {
       this.topic.set(parsed.topic ?? '');
       this.difficulty.set(parsed.difficulty ?? 'normal');
       this.generatedQuiz.set(restoredQuiz);
-      this.statusMessage.set(parsed.statusMessage ?? 'Session restored.');
-      this.modelStatus.set(parsed.modelStatus ?? 'Model: local fallback ready');
+      this.statusMessage.set(parsed.statusMessage ?? 'Sesion restaurada.');
+      this.modelStatus.set(parsed.modelStatus ?? 'Modelo: modo local listo');
       this.detectedQuestionCount.set(parsed.detectedQuestionCount ?? this.extractQuestionCount(parsed.topic ?? ''));
       this.activeSessionId.set(parsed.activeSessionId ?? null);
     } catch {

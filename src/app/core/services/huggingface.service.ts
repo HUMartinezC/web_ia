@@ -31,6 +31,12 @@ interface HuggingFaceImageJsonResponse {
   image?: string;
 }
 
+interface EducationalQuote {
+  quote: string;
+  author: string;
+  source: 'huggingface' | 'local';
+}
+
 @Injectable({ providedIn: 'root' })
 export class HuggingfaceService {
   private readonly httpClient = inject(HttpClient);
@@ -134,6 +140,56 @@ export class HuggingfaceService {
       return null;
     } catch {
       return null;
+    }
+  }
+
+  async generateEducationalQuote(topic: string = 'educacion'): Promise<EducationalQuote> {
+    if (!environment.huggingFace.enabled || !environment.huggingFace.apiToken) {
+      return this.buildLocalQuote(topic);
+    }
+
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${environment.huggingFace.apiToken}`,
+      'Content-Type': 'application/json'
+    });
+
+    try {
+      const response = await firstValueFrom(
+        this.httpClient.post<HuggingFaceChatResponse>(
+          this.routerUrl,
+          {
+            model: this.modelId,
+            messages: this.buildQuoteMessages(topic),
+            temperature: 0.75,
+            max_tokens: 140,
+            response_format: { type: 'json_object' }
+          },
+          { headers }
+        )
+      );
+
+      const content = this.extractGeneratedText(response);
+      const payload = this.extractJsonPayload(content);
+
+      if (!payload) {
+        return this.buildLocalQuote(topic);
+      }
+
+      const parsed = this.tryParseJsonDeep(payload) as { quote?: unknown; author?: unknown };
+      const quote = this.sanitizeQuoteText(this.asNonEmptyString(parsed.quote));
+      const author = this.sanitizeQuoteAuthor(this.asNonEmptyString(parsed.author));
+
+      if (!quote) {
+        return this.buildLocalQuote(topic);
+      }
+
+      return {
+        quote,
+        author,
+        source: 'huggingface'
+      };
+    } catch {
+      return this.buildLocalQuote(topic);
     }
   }
 
@@ -795,6 +851,57 @@ export class HuggingfaceService {
       `Elementos clave: ${hints}.`,
       'High detail, cinematic lighting, clean composition, no text, no watermark.'
     ].join(' ');
+  }
+
+  private buildQuoteMessages(topic: string): Array<{ role: 'system' | 'user'; content: string }> {
+    return [
+      {
+        role: 'system',
+        content:
+          'Eres un generador de citas educativas. Devuelve SOLO JSON valido con esquema {"quote":string,"author":string}. La cita debe estar en espanol, ser inspiradora y centrada en aprendizaje, curiosidad, disciplina o pensamiento critico. El autor puede ser una figura historica real o una atribucion sintetica breve si no recuerdas una cita real. No uses markdown.'
+      },
+      {
+        role: 'user',
+        content: `Tema base: ${topic}. Genera una cita educativa breve para la portada de la aplicacion.`
+      }
+    ];
+  }
+
+  private buildLocalQuote(topic: string): EducationalQuote {
+    const quotes: Array<{ quote: string; author: string }> = [
+      { quote: 'Aprender es transformar curiosidad en conocimiento util.', author: 'QuizAI' },
+      { quote: 'La educacion es el mapa mas fiable para explorar cualquier tema.', author: 'QuizAI' },
+      { quote: 'Cada pregunta bien hecha abre una puerta nueva al entendimiento.', author: 'QuizAI' },
+      { quote: 'La constancia convierte el estudio en progreso visible.', author: 'QuizAI' }
+    ];
+
+    const index = this.normalizeText(topic).length % quotes.length;
+    const selected = quotes[index] ?? quotes[0];
+
+    return {
+      ...selected,
+      source: 'local'
+    };
+  }
+
+  private sanitizeQuoteText(value: string | null): string {
+    if (!value) {
+      return '';
+    }
+
+    return value
+      .replace(/^['"\s]+|['"\s]+$/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  private sanitizeQuoteAuthor(value: string | null): string {
+    if (!value) {
+      return 'QuizAI';
+    }
+
+    const cleaned = value.replace(/^[-–—\s]+|[-–—\s]+$/g, '').trim();
+    return cleaned || 'QuizAI';
   }
 
   private blobToBase64Resized(blob: Blob, maxSize: number, quality: number): Promise<string | null> {

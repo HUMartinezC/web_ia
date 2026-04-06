@@ -94,6 +94,13 @@
   line-height: 1;
 }
 
+.today-subtitle {
+  display: block;
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.75rem;
+}
+
 @media (max-width: 900px) {
   .sidebar {
     position: static;

@@ -15,7 +15,7 @@ export const routes: Routes = [
   {
     path: 'generate',
     component: GenerateComponent,
-    title: 'Generate | QuizAI'
+    title: 'Generar | QuizAI'
   },
   {
     path: 'quiz/:id',
@@ -25,12 +25,12 @@ export const routes: Routes = [
   {
     path: 'history',
     component: HistoryComponent,
-    title: 'History | QuizAI'
+    title: 'Historial | QuizAI'
   },
   {
     path: 'stats',
     component: StatsComponent,
-    title: 'Stats | QuizAI'
+    title: 'Estadisticas | QuizAI'
   },
   {
     path: '**',

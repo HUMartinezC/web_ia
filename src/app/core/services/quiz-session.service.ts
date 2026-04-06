@@ -114,6 +114,39 @@ export class QuizSessionService {
     return true;
   }
 
+  deleteAllSessions(): number {
+    const count = Object.keys(this.sessions).length;
+    if (!count) {
+      return 0;
+    }
+
+    this.sessions = {};
+    this.persistSessions();
+    return count;
+  }
+
+  getCompletedTodayCount(): number {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = today.getMonth();
+    const day = today.getDate();
+
+    return Object.values(this.sessions)
+      .map((session) => this.normalizeSession(session))
+      .filter((session) => {
+        if (!session.isSubmitted) {
+          return false;
+        }
+
+        const updated = new Date(session.updatedAt);
+        return (
+          updated.getFullYear() === year &&
+          updated.getMonth() === month &&
+          updated.getDate() === day
+        );
+      }).length;
+  }
+
   duplicateSession(id: string): QuizSession | null {
     const original = this.getSession(id);
     if (!original) {

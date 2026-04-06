@@ -1,16 +1,16 @@
 <section class="generate-page">
   <header class="page-copy">
-    <p class="eyebrow">Generate</p>
-    <h1>Create quiz</h1>
+    <p class="eyebrow">Generar</p>
+    <h1>Crear quiz</h1>
     <p class="lead">
-      Enter a topic, choose a difficulty, and preview a quiz before the Hugging Face integration arrives.
+      Escribe un tema, elige la dificultad y previsualiza el quiz antes de resolverlo.
     </p>
   </header>
 
   <div class="generate-grid">
     <section class="panel form-panel">
       <label class="field">
-        <span>Topic</span>
+        <span>Tema</span>
         <input
           type="text"
           [value]="topic()"
@@ -19,20 +19,20 @@
         >
       </label>
 
-      <p class="hint-message">Detected questions: {{ detectedQuestionCount() }}</p>
+      <p class="hint-message">Preguntas detectadas: {{ detectedQuestionCount() }}</p>
 
       <fieldset class="field difficulty-field">
-        <legend>Difficulty</legend>
+        <legend>Dificultad</legend>
         <div class="difficulty-options">
-          <button type="button" class="chip" [class.active]="difficulty() === 'easy'" (click)="setDifficulty('easy')">Easy</button>
+          <button type="button" class="chip" [class.active]="difficulty() === 'easy'" (click)="setDifficulty('easy')">Facil</button>
           <button type="button" class="chip" [class.active]="difficulty() === 'normal'" (click)="setDifficulty('normal')">Normal</button>
-          <button type="button" class="chip" [class.active]="difficulty() === 'hard'" (click)="setDifficulty('hard')">Hard</button>
+          <button type="button" class="chip" [class.active]="difficulty() === 'hard'" (click)="setDifficulty('hard')">Dificil</button>
         </div>
       </fieldset>
 
       <button type="button" class="generate-button" [disabled]="!canGenerate()" (click)="generateQuiz()">
-        <span *ngIf="!isGenerating(); else loadingState">Generate quiz</span>
-        <ng-template #loadingState>Generating...</ng-template>
+        <span *ngIf="!isGenerating(); else loadingState">Generar quiz</span>
+        <ng-template #loadingState>Generando...</ng-template>
       </button>
 
       <p class="status-message">{{ statusMessage() }}</p>
@@ -42,10 +42,10 @@
     <section class="panel preview-panel">
       <div class="preview-header">
         <div>
-          <p class="preview-kicker">Live preview</p>
-          <h2>{{ generatedQuiz()?.topic || 'Waiting for a topic' }}</h2>
+          <p class="preview-kicker">Vista previa</p>
+          <h2>{{ generatedQuiz()?.topic || 'Esperando tema' }}</h2>
         </div>
-        <span class="difficulty-badge">{{ generatedQuiz()?.difficulty || difficulty() }}</span>
+        <span class="difficulty-badge">{{ difficultyLabel(generatedQuiz()?.difficulty || difficulty()) }}</span>
       </div>
 
       <ng-container *ngIf="generatedQuiz(); else emptyState">
@@ -66,15 +66,15 @@
 
         <div class="quiz-actions">
           <button type="button" class="submit-button" [disabled]="!canStartQuiz()" (click)="startQuiz()">
-            Start quiz
+            Empezar quiz
           </button>
-          <p class="result-message">The test is solved in route /quiz/:id.</p>
+          <p class="result-message">La resolucion se realiza en /quiz/:id.</p>
         </div>
       </ng-container>
 
       <ng-template #emptyState>
         <p class="empty-state">
-          Your generated quiz will appear here. The local generator remains available as a fallback when Hugging Face is not configured.
+          Tu quiz generado aparecera aqui. Si Hugging Face no esta disponible, se usa el modo local.
         </p>
       </ng-template>
     </section>

@@ -2,13 +2,13 @@
   <header class="quiz-header">
     <p class="eyebrow">Quiz</p>
     <h1>{{ currentSession.quiz.topic }}</h1>
-    <p class="lead">{{ currentSession.quiz.difficulty | titlecase }} difficulty</p>
+    <p class="lead">Dificultad {{ difficultyLabel(currentSession.quiz.difficulty) }}</p>
   </header>
 
   <ng-container *ngIf="!currentSession.isSubmitted; else resultState">
     <section class="question-panel" *ngIf="currentQuestion() as question">
       <div class="progress-row">
-        <span>Question {{ currentSession.currentQuestionIndex + 1 }} of {{ currentSession.quiz.questions.length }}</span>
+        <span>Pregunta {{ currentSession.currentQuestionIndex + 1 }} de {{ currentSession.quiz.questions.length }}</span>
         <span>{{ progress() }}%</span>
       </div>
       <div class="progress-bar">
@@ -32,10 +32,10 @@
 
       <div class="action-row">
         <button type="button" class="secondary" (click)="previousQuestion()" [disabled]="currentSession.currentQuestionIndex === 0">
-          Previous
+          Anterior
         </button>
         <button type="button" class="primary" (click)="nextOrSubmit()" [disabled]="currentAnswer() < 0">
-          {{ isLastQuestion() ? 'Submit test' : 'Next question' }}
+          {{ isLastQuestion() ? 'Enviar quiz' : 'Siguiente pregunta' }}
         </button>
       </div>
     </section>
@@ -43,22 +43,22 @@
 
   <ng-template #resultState>
     <section class="result-panel">
-      <p class="eyebrow">Result</p>
-      <h2>{{ currentSession.score }}/{{ currentSession.quiz.questions.length }} correct</h2>
+      <p class="eyebrow">Resultado</p>
+      <h2>{{ currentSession.score }}/{{ currentSession.quiz.questions.length }} correctas</h2>
 
       <div class="summary-list">
         <article class="summary-item" *ngFor="let question of currentSession.quiz.questions; let i = index">
           <h3>Q{{ i + 1 }}. {{ question.question }}</h3>
           <p [class.good]="currentSession.answers[i] === question.correctIndex" [class.bad]="currentSession.answers[i] !== question.correctIndex">
-            Your answer: {{ question.options[currentSession.answers[i]] || 'No answer' }}
+            Tu respuesta: {{ question.options[currentSession.answers[i]] || 'Sin respuesta' }}
           </p>
-          <p class="good">Correct answer: {{ question.options[question.correctIndex] }}</p>
+          <p class="good">Respuesta correcta: {{ question.options[question.correctIndex] }}</p>
         </article>
       </div>
 
       <div class="action-row">
-        <button type="button" class="secondary" (click)="resetQuiz()">Try again</button>
-        <button type="button" class="primary" (click)="goToGenerate()">New quiz</button>
+        <button type="button" class="secondary" (click)="resetQuiz()">Intentar de nuevo</button>
+        <button type="button" class="primary" (click)="goToGenerate()">Nuevo quiz</button>
       </div>
     </section>
   </ng-template>
@@ -67,8 +67,8 @@
 <ng-template #missingSession>
   <section class="result-panel">
     <p class="eyebrow">Quiz</p>
-    <h2>Session not found</h2>
-    <p class="lead">Generate a new quiz first, then start it from the preview page.</p>
-    <button type="button" class="primary" routerLink="/generate">Go to generate</button>
+    <h2>Sesion no encontrada</h2>
+    <p class="lead">Genera un nuevo quiz y luego inicialo desde la vista previa.</p>
+    <button type="button" class="primary" routerLink="/generate">Ir a generar</button>
   </section>
 </ng-template>

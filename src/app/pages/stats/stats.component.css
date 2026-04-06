@@ -4,7 +4,7 @@
 
 .stats-page {
   display: grid;
-  gap: 1rem;
+  gap: 1.1rem;
 }
 
 .page-copy {
@@ -32,17 +32,19 @@ h1 {
 
 .kpi-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.75rem;
 }
 
 .kpi-card {
   border: 1px solid var(--border);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 0.9rem 1rem;
+  border-radius: 16px;
+  background: rgba(37, 41, 64, 0.88);
+  padding: 1rem;
   display: grid;
-  gap: 0.25rem;
+  grid-template-columns: 52px minmax(0, 1fr);
+  align-items: center;
+  gap: 0.8rem;
 }
 
 .kpi-card span {
@@ -51,18 +53,43 @@ h1 {
 }
 
 .kpi-card strong {
-  font-size: 1.45rem;
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.kpi-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+}
+
+.kpi-icon.trophy {
+  background: rgba(232, 255, 26, 0.16);
+  color: #e8ff1a;
+}
+
+.kpi-icon.accuracy {
+  background: rgba(78, 205, 196, 0.16);
+  color: #4ecdc4;
+}
+
+.kpi-icon.streak {
+  background: rgba(255, 122, 122, 0.16);
+  color: #ff7a7a;
 }
 
 .category-panel {
   border: 1px solid var(--border);
-  border-radius: 14px;
-  background: rgba(255, 255, 255, 0.03);
-  padding: 1rem;
+  border-radius: 16px;
+  background: rgba(37, 41, 64, 0.88);
+  padding: 1.2rem;
 }
 
 .category-panel h2 {
-  margin: 0 0 0.75rem;
+  margin: 0 0 1rem;
 }
 
 .category-list {
@@ -72,7 +99,7 @@ h1 {
 
 .category-item {
   display: grid;
-  gap: 0.4rem;
+  gap: 0.5rem;
 }
 
 .category-label {
@@ -89,7 +116,7 @@ h1 {
 }
 
 .category-bar {
-  height: 10px;
+  height: 12px;
   background: rgba(255, 255, 255, 0.1);
   border-radius: 999px;
   overflow: hidden;
@@ -98,7 +125,38 @@ h1 {
 .category-bar span {
   display: block;
   height: 100%;
-  background: linear-gradient(90deg, var(--accent), #6ad5cc);
+}
+
+.legend-row {
+  margin-top: 1rem;
+  padding-top: 0.8rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.85rem;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.legend-item i {
+  width: 11px;
+  height: 11px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.quote {
+  margin: 0;
+  text-align: center;
+  color: rgba(220, 226, 248, 0.8);
+  font-style: italic;
+  font-size: 1.02rem;
 }
 
 .empty-state {
@@ -126,7 +184,7 @@ h1 {
 
 @media (max-width: 960px) {
   .kpi-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1fr;
   }
 
   .category-label {

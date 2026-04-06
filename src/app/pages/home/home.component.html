@@ -1,15 +1,58 @@
 <section class="home-shell">
-  <div class="hero-card">
-    <p class="eyebrow">QuizAI scaffold</p>
-    <h1>AI quiz generation, ready for the next stages.</h1>
-    <p class="lead">
-      This initial Angular bootstrap sets the foundation for the generate, quiz,
-      history, and stats flows.
-    </p>
-    <div class="status-row">
-      <span class="status-pill">Angular 21</span>
-      <span class="status-pill">Standalone</span>
-      <span class="status-pill">Signals-ready</span>
+  <div class="home-grid">
+    <div class="hero-card">
+      <p class="eyebrow">Bienvenido a QuizAI</p>
+      <h1>Convierte cualquier tema en un reto inteligente.</h1>
+      <p class="lead">
+        Escribe un tema, elige la dificultad y crea quizzes con IA en segundos.
+        Guarda tu progreso, descubre categorías y revisa tus métricas de aprendizaje.
+      </p>
+
+      <div class="cta-row">
+        <a routerLink="/generate" class="primary-cta">Crear un quiz</a>
+        <a routerLink="/history" class="ghost-cta">Ver galería</a>
+      </div>
+
+      <div class="status-row">
+        <span class="status-pill">Angular 21</span>
+        <span class="status-pill">Hugging Face</span>
+        <span class="status-pill">Historial en galeria</span>
+      </div>
     </div>
+
+    <aside class="quote-card">
+      <p class="quote-kicker">Cita educativa</p>
+      <blockquote>{{ quote().quote }}</blockquote>
+      <p class="quote-author">— {{ quote().author }}</p>
+
+      <div class="quote-actions">
+        <button type="button" class="quote-button" (click)="loadQuote()" [disabled]="isLoadingQuote()">
+          {{ isLoadingQuote() ? 'Generando...' : 'Nueva cita' }}
+        </button>
+        <span class="quote-source">{{ quote().source === 'huggingface' ? 'IA' : 'Fallback local' }}</span>
+      </div>
+
+      <div class="quote-note">
+        <p>Cita para inspirar estudio, curiosidad y pensamiento crítico.</p>
+      </div>
+    </aside>
+
+    <section class="home-highlights">
+      <article class="highlight-card">
+        <span>01</span>
+        <h2>Generación rápida</h2>
+        <p>Escribe un tema y crea un quiz completo con categorías, imagen y portada.</p>
+      </article>
+      <article class="highlight-card">
+        <span>02</span>
+        <h2>Historial visual</h2>
+        <p>Revisa cada quiz como una tarjeta visual con imagen, categoría y acciones rápidas.</p>
+      </article>
+      <article class="highlight-card">
+        <span>03</span>
+        <h2>Progreso medible</h2>
+        <p>Consulta estadísticas, rachas y precisiones por categoría para seguir mejorando.</p>
+      </article>
+    </section>
   </div>
 </section>

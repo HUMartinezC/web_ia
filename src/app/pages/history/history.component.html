@@ -1,59 +1,62 @@
 <section class="history-page">
   <header class="page-copy">
-    <p class="eyebrow">History</p>
-    <h1>Past quizzes</h1>
-    <p class="lead">Continue, repeat, or remove quizzes from your saved sessions.</p>
+    <p class="eyebrow">Historial</p>
+    <h1>Quizzes guardados</h1>
+    <p class="lead">Continua, repite o elimina tus quizzes en formato galeria.</p>
+    <button type="button" class="clear-all" (click)="deleteAllQuizzes()" [disabled]="!sessions().length">
+      Borrar todos
+    </button>
   </header>
 
   <section class="summary-row">
     <article class="summary-card">
-      <span>Total sessions</span>
+      <span>Total de sesiones</span>
       <strong>{{ totalSessions() }}</strong>
     </article>
     <article class="summary-card">
-      <span>Completed</span>
+      <span>Completados</span>
       <strong>{{ completedCount() }}</strong>
     </article>
     <article class="summary-card">
-      <span>Average score</span>
+      <span>Promedio</span>
       <strong>{{ avgScore() }}%</strong>
     </article>
   </section>
 
   <section class="filters">
     <label class="search-field">
-      <span>Search by topic</span>
+      <span>Buscar por tema</span>
       <input
         type="text"
         [value]="search()"
         (input)="setSearch($any($event.target).value)"
-        placeholder="e.g. programación, historia"
+        placeholder="ej. programacion, historia"
       >
     </label>
 
     <div class="filter-group">
-      <span>Difficulty</span>
+      <span>Dificultad</span>
       <div class="chips">
-        <button type="button" [class.active]="difficultyFilter() === 'all'" (click)="setDifficultyFilter('all')">All</button>
-        <button type="button" [class.active]="difficultyFilter() === 'easy'" (click)="setDifficultyFilter('easy')">Easy</button>
+        <button type="button" [class.active]="difficultyFilter() === 'all'" (click)="setDifficultyFilter('all')">Todas</button>
+        <button type="button" [class.active]="difficultyFilter() === 'easy'" (click)="setDifficultyFilter('easy')">Facil</button>
         <button type="button" [class.active]="difficultyFilter() === 'normal'" (click)="setDifficultyFilter('normal')">Normal</button>
-        <button type="button" [class.active]="difficultyFilter() === 'hard'" (click)="setDifficultyFilter('hard')">Hard</button>
+        <button type="button" [class.active]="difficultyFilter() === 'hard'" (click)="setDifficultyFilter('hard')">Dificil</button>
       </div>
     </div>
 
     <div class="filter-group">
-      <span>Status</span>
+      <span>Estado</span>
       <div class="chips">
-        <button type="button" [class.active]="statusFilter() === 'all'" (click)="setStatusFilter('all')">All</button>
-        <button type="button" [class.active]="statusFilter() === 'in-progress'" (click)="setStatusFilter('in-progress')">In progress</button>
-        <button type="button" [class.active]="statusFilter() === 'completed'" (click)="setStatusFilter('completed')">Completed</button>
+        <button type="button" [class.active]="statusFilter() === 'all'" (click)="setStatusFilter('all')">Todos</button>
+        <button type="button" [class.active]="statusFilter() === 'in-progress'" (click)="setStatusFilter('in-progress')">En progreso</button>
+        <button type="button" [class.active]="statusFilter() === 'completed'" (click)="setStatusFilter('completed')">Completado</button>
       </div>
     </div>
 
     <div class="filter-group">
-      <span>Category</span>
+      <span>Categoria</span>
       <div class="chips">
-        <button type="button" [class.active]="categoryFilter() === 'all'" (click)="setCategoryFilter('all')">All</button>
+        <button type="button" [class.active]="categoryFilter() === 'all'" (click)="setCategoryFilter('all')">Todas</button>
         <button
           type="button"
           *ngFor="let category of availableCategories()"
@@ -86,28 +89,28 @@
       <div class="card-body">
         <p class="item-topic">{{ session.quiz.topic }}</p>
         <p class="item-meta">
-          <span class="tag">{{ session.quiz.difficulty }}</span>
+          <span class="tag">{{ difficultyLabel(session.quiz.difficulty) }}</span>
           <span class="tag" *ngFor="let category of (session.quiz.categories?.length ? session.quiz.categories : [session.quiz.category])">
             {{ category }}
           </span>
-          <span class="tag">{{ session.isSubmitted ? 'completed' : 'in progress' }}</span>
+          <span class="tag">{{ session.isSubmitted ? 'completado' : 'en progreso' }}</span>
         </p>
 
         <div class="item-score">
           <strong *ngIf="session.isSubmitted">{{ session.score }}/{{ session.quiz.questions.length }}</strong>
           <strong *ngIf="!session.isSubmitted">{{ answeredCount(session) }}/{{ session.quiz.questions.length }}</strong>
-          <span *ngIf="session.isSubmitted">{{ scorePercent(session) }}% correct</span>
-          <span *ngIf="!session.isSubmitted">answered</span>
+          <span *ngIf="session.isSubmitted">{{ scorePercent(session) }}% aciertos</span>
+          <span *ngIf="!session.isSubmitted">respondidas</span>
         </div>
 
-        <p class="card-updated">updated {{ session.updatedAt | date:'short' }}</p>
+        <p class="card-updated">actualizado {{ session.updatedAt | date:'short' }}</p>
 
         <div class="item-actions">
           <button type="button" class="secondary" (click)="continueQuiz(session.id)">
-            {{ session.isSubmitted ? 'Review' : 'Continue' }}
+            {{ session.isSubmitted ? 'Revisar' : 'Continuar' }}
           </button>
-          <button type="button" class="secondary" (click)="repeatQuiz(session.id)">Repeat</button>
-          <button type="button" class="danger" (click)="deleteQuiz(session.id)">Delete</button>
+          <button type="button" class="secondary" (click)="repeatQuiz(session.id)">Repetir</button>
+          <button type="button" class="danger" (click)="deleteQuiz(session.id)">Eliminar</button>
         </div>
       </div>
     </article>
@@ -115,8 +118,8 @@
 
   <ng-template #emptyState>
     <section class="empty-state">
-      <p>No quizzes match your filters yet.</p>
-      <a routerLink="/generate" class="primary-link">Generate a new quiz</a>
+      <p>No hay quizzes que coincidan con los filtros.</p>
+      <a routerLink="/generate" class="primary-link">Generar nuevo quiz</a>
     </section>
   </ng-template>
 </section>

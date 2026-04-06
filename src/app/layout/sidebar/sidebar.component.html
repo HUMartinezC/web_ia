@@ -1,30 +1,31 @@
 <aside class="sidebar">
   <div class="brand">
     <span class="brand-mark">QuizAI</span>
-    <span class="brand-tag">Learn smarter</span>
+    <span class="brand-tag">Aprende mejor</span>
   </div>
 
   <nav class="nav">
     <a routerLink="/" routerLinkActive="active" [routerLinkActiveOptions]="{ exact: true }">
       <span class="nav-icon">✎</span>
-      <span>Home</span>
+      <span>Inicio</span>
     </a>
     <a routerLink="/generate" routerLinkActive="active">
       <span class="nav-icon">✦</span>
-      <span>Generate</span>
+      <span>Generar</span>
     </a>
     <a routerLink="/history" routerLinkActive="active">
       <span class="nav-icon">▣</span>
-      <span>History</span>
+      <span>Historial</span>
     </a>
     <a routerLink="/stats" routerLinkActive="active">
       <span class="nav-icon">▤</span>
-      <span>Stats</span>
+      <span>Estadisticas</span>
     </a>
   </nav>
 
   <div class="today-card">
-    <span class="today-label">Quizzes today</span>
-    <strong>0</strong>
+    <span class="today-label">Quizzes de hoy</span>
+    <strong>{{ completedToday() }}</strong>
+    <small class="today-subtitle">{{ completedTodayLabel() }}</small>
   </div>
 </aside>

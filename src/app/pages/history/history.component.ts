@@ -127,6 +127,21 @@ export class HistoryComponent {
     this.reloadSessions();
   }
 
+  deleteAllQuizzes(): void {
+    const total = this.sessions().length;
+    if (!total) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Se eliminaran ${total} quizzes del historial. Esta accion no se puede deshacer.`);
+    if (!confirmed) {
+      return;
+    }
+
+    this.quizSessionService.deleteAllSessions();
+    this.reloadSessions();
+  }
+
   scorePercent(session: QuizSession): number {
     if (!session.isSubmitted || typeof session.score !== 'number') {
       return 0;
@@ -137,6 +152,18 @@ export class HistoryComponent {
 
   answeredCount(session: QuizSession): number {
     return session.answers.filter((answer) => answer >= 0).length;
+  }
+
+  difficultyLabel(value: Difficulty): string {
+    if (value === 'easy') {
+      return 'Facil';
+    }
+
+    if (value === 'hard') {
+      return 'Dificil';
+    }
+
+    return 'Normal';
   }
 
   private reloadSessions(): void {

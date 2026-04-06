@@ -125,3 +125,10 @@
 - Prompt: Fix history cards showing placeholders only despite image generation integration.
 - Result: Added robust image response parsing (binary and JSON), model-loading retry logic, and delayed retries before fallback.
 - Justification: HF image endpoints can return JSON loading/error payloads before returning binary images; handling this avoids false null images.
+
+## 2026-04-06 - Spanish UI + sidebar/history/stats refresh
+
+- Tool: Copilot Chat
+- Prompt: Replace generic home, translate UI to Spanish, add delete-all in history, handle quizzes-today card, and restyle stats to match reference.
+- Result: Home upgraded with CTAs, full page copy translated to Spanish, History now supports bulk delete, sidebar now shows completed quizzes today, and Stats was redesigned with icon cards and colorful category bars/legend.
+- Justification: Product UX needed stronger identity, language consistency, and faster session management controls.
