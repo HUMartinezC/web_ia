@@ -22,7 +22,7 @@ export class HomeComponent {
 
   readonly quote = signal<HomeQuoteState>({
     quote: 'Aprender es transformar curiosidad en conocimiento util.',
-    author: 'QuizAI',
+    author: 'Edupravia',
     source: 'local'
   });
   readonly isLoadingQuote = signal(false);

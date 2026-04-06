@@ -16,7 +16,12 @@ interface GenerateSessionState {
   activeSessionId: string | null;
 }
 
-const GENERATE_SESSION_KEY = 'quizai.generate.session.v1';
+const GENERATE_SESSION_KEY = 'edupravia.generate.session.v1';
+const LEGACY_GENERATE_SESSION_KEYS = [
+  'preguntia.generate.session.v1',
+  'trivora.generate.session.v1',
+  'quizai.generate.session.v1'
+];
 
 @Component({
   selector: 'app-generate',
@@ -179,7 +184,10 @@ export class GenerateComponent {
       return;
     }
 
-    const raw = localStorage.getItem(GENERATE_SESSION_KEY);
+    const raw =
+      localStorage.getItem(GENERATE_SESSION_KEY) ??
+      LEGACY_GENERATE_SESSION_KEYS.map((key) => localStorage.getItem(key)).find((value) => value !== null) ??
+      null;
     if (!raw) {
       return;
     }
@@ -195,8 +203,10 @@ export class GenerateComponent {
       this.modelStatus.set(parsed.modelStatus ?? 'Modelo: modo local listo');
       this.detectedQuestionCount.set(parsed.detectedQuestionCount ?? this.extractQuestionCount(parsed.topic ?? ''));
       this.activeSessionId.set(parsed.activeSessionId ?? null);
+      localStorage.setItem(GENERATE_SESSION_KEY, raw);
     } catch {
       localStorage.removeItem(GENERATE_SESSION_KEY);
+      LEGACY_GENERATE_SESSION_KEYS.forEach((key) => localStorage.removeItem(key));
     }
   }
 }

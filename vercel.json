@@ -1,6 +1,6 @@
 {
   "buildCommand": "npm run build",
-  "outputDirectory": "dist/quizai/browser",
+  "outputDirectory": "dist/edupravia/browser",
   "rewrites": [
     {
       "source": "/api/(.*)",

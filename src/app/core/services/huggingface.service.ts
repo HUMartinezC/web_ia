@@ -879,10 +879,10 @@ export class HuggingfaceService {
 
   private buildLocalQuote(topic: string): EducationalQuote {
     const quotes: Array<{ quote: string; author: string }> = [
-      { quote: 'Aprender es transformar curiosidad en conocimiento util.', author: 'QuizAI' },
-      { quote: 'La educacion es el mapa mas fiable para explorar cualquier tema.', author: 'QuizAI' },
-      { quote: 'Cada pregunta bien hecha abre una puerta nueva al entendimiento.', author: 'QuizAI' },
-      { quote: 'La constancia convierte el estudio en progreso visible.', author: 'QuizAI' }
+      { quote: 'Aprender es transformar curiosidad en conocimiento util.', author: 'Edupravia' },
+      { quote: 'La educacion es el mapa mas fiable para explorar cualquier tema.', author: 'Edupravia' },
+      { quote: 'Cada pregunta bien hecha abre una puerta nueva al entendimiento.', author: 'Edupravia' },
+      { quote: 'La constancia convierte el estudio en progreso visible.', author: 'Edupravia' }
     ];
 
     const index = this.normalizeText(topic).length % quotes.length;
@@ -907,11 +907,11 @@ export class HuggingfaceService {
 
   private sanitizeQuoteAuthor(value: string | null): string {
     if (!value) {
-      return 'QuizAI';
+      return 'Edupravia';
     }
 
     const cleaned = value.replace(/^[-–—\s]+|[-–—\s]+$/g, '').trim();
-    return cleaned || 'QuizAI';
+    return cleaned || 'Edupravia';
   }
 
   private blobToBase64Resized(blob: Blob, maxSize: number, quality: number): Promise<string | null> {

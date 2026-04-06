@@ -86,7 +86,7 @@ Esto evita sesgos al excluir intentos incompletos.
 
 El despliegue objetivo es Vercel.
 
-- Frontend estático: `dist/quizai/browser`.
+- Frontend estático: `dist/edupravia/browser`.
 - Proxy serverless: `api/hf.js`.
 
 El token de Hugging Face (`HF_API_TOKEN`) se mantiene en variables de entorno de Vercel y no en el bundle frontend.

@@ -2,7 +2,12 @@ import { Injectable } from '@angular/core';
 
 import { GeneratedQuiz, QuizSession } from '../models/quiz.model';
 
-const STORAGE_KEY = 'quizai.quiz.sessions.v1';
+const STORAGE_KEY = 'edupravia.quiz.sessions.v1';
+const LEGACY_STORAGE_KEYS = [
+  'preguntia.quiz.sessions.v1',
+  'trivora.quiz.sessions.v1',
+  'quizai.quiz.sessions.v1'
+];
 
 @Injectable({ providedIn: 'root' })
 export class QuizSessionService {
@@ -223,23 +228,26 @@ export class QuizSessionService {
       return {};
     }
 
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
+    const rawSessions =
+      localStorage.getItem(STORAGE_KEY) ??
+      LEGACY_STORAGE_KEYS.map((key) => localStorage.getItem(key)).find((value) => value !== null) ??
+      null;
+
+    if (!rawSessions) {
       return {};
     }
 
     try {
-      const parsed = JSON.parse(raw) as Record<string, QuizSession>;
+      const parsed = JSON.parse(rawSessions) as Record<string, QuizSession>;
       const source = parsed ?? {};
       const normalizedEntries = Object.entries(source).map(([id, session]) => [id, this.normalizeSession(session)]);
       const normalized = Object.fromEntries(normalizedEntries) as Record<string, QuizSession>;
 
-      if (JSON.stringify(source) !== JSON.stringify(normalized)) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
-      }
-
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(normalized));
       return normalized;
     } catch {
+      localStorage.removeItem(STORAGE_KEY);
+      LEGACY_STORAGE_KEYS.forEach((key) => localStorage.removeItem(key));
       return {};
     }
   }

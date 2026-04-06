@@ -1,4 +1,4 @@
-# 📋 QuizAI — Instrucciones de Desarrollo
+# 📋 Edupravia — Instrucciones de Desarrollo
 
 > Web educacional generadora de cuestionarios con IA, construida mediante *vibe coding* y desplegada en Vercel.
 
@@ -245,7 +245,7 @@ Configuración recomendada:
 
 - Conectar el repositorio en Vercel.
 - Build Command: `npm run build`
-- Output Directory: `dist/quizai/browser`
+- Output Directory: `dist/edupravia/browser`
 - Variable de entorno: `HF_API_TOKEN`
 - Usar la función serverless `api/hf.js` para proxy seguro de Hugging Face (evita exponer el token en frontend).
 

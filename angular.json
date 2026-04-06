@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "quizai": {
+    "edupravia": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/quizai",
+            "outputPath": "dist/edupravia",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": ["zone.js"],
@@ -49,10 +49,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "quizai:build:production"
+              "buildTarget": "edupravia:build:production"
             },
             "development": {
-              "buildTarget": "quizai:build:development"
+              "buildTarget": "edupravia:build:development"
             }
           },
           "defaultConfiguration": "development"

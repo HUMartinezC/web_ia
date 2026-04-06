@@ -10,27 +10,27 @@ export const routes: Routes = [
   {
     path: '',
     component: HomeComponent,
-    title: 'QuizAI'
+    title: 'Edupravia'
   },
   {
     path: 'generate',
     component: GenerateComponent,
-    title: 'Generar | QuizAI'
+    title: 'Generar | Edupravia'
   },
   {
     path: 'quiz/:id',
     component: QuizComponent,
-    title: 'Quiz | QuizAI'
+    title: 'Quiz | Edupravia'
   },
   {
     path: 'history',
     component: HistoryComponent,
-    title: 'Historial | QuizAI'
+    title: 'Historial | Edupravia'
   },
   {
     path: 'stats',
     component: StatsComponent,
-    title: 'Estadisticas | QuizAI'
+    title: 'Estadisticas | Edupravia'
   },
   {
     path: '**',

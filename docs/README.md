@@ -1,10 +1,10 @@
-# QuizAI
+# Edupravia
 
 Aplicación web educativa para generar y resolver cuestionarios con IA usando Angular 21 + Hugging Face.
 
 ## Resumen
 
-QuizAI permite:
+Edupravia permite:
 
 - Generar quizzes a partir de un tema y dificultad.
 - Resolver quizzes en flujo interactivo pregunta por pregunta.
@@ -73,7 +73,7 @@ npm run build
 Configuración recomendada del proyecto en Vercel:
 
 - Build Command: `npm run build`
-- Output Directory: `dist/quizai/browser`
+- Output Directory: `dist/edupravia/browser`
 - Root Directory: `./`
 
 Variable de entorno obligatoria:
