@@ -23,4 +23,31 @@ Category classification integration (HF Model 2) and final deployment.
 
 ## Hugging Face configuration
 
-Set the token and enable the model in `src/environments/environment.ts` before building against the API. If it stays disabled, the app uses the local quiz fallback.
+`src/environments/environment.ts` is only for local flags and fallback behavior.
+Do not store a secret Hugging Face token in Angular environment files for production, because it ends up in the browser bundle.
+
+For Vercel, the secure setup is:
+- keep the frontend calling a backend endpoint or Vercel Function
+- store the token as a Vercel environment variable
+- let the backend add the `Authorization` header when talking to Hugging Face
+
+If the API remains disabled, the app uses the local quiz fallback.
+
+## Vercel deployment checklist
+
+The project is configured for Vercel with:
+- Angular static build output: `dist/quizai/browser`
+- SPA fallback rewrite to `index.html`
+- Serverless proxy at `api/hf.ts` for Hugging Face calls
+
+Required Vercel environment variable:
+- `HF_API_TOKEN` (Project Settings -> Environment Variables)
+
+Recommended values and scope:
+- Name: `HF_API_TOKEN`
+- Value: your Hugging Face token (`hf_...`)
+- Environments: Production, Preview, Development (if you also test Vercel Preview)
+
+Important:
+- Do not place Hugging Face secrets in Angular environment files.
+- After creating/updating `HF_API_TOKEN`, trigger a new Vercel deployment so the function picks the new value.

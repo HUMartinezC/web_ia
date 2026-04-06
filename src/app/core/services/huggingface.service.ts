@@ -40,12 +40,22 @@ interface EducationalQuote {
 @Injectable({ providedIn: 'root' })
 export class HuggingfaceService {
   private readonly httpClient = inject(HttpClient);
+  private readonly directApiToken = environment.huggingFace.apiToken?.trim() ?? '';
+  private readonly useServerProxy = environment.huggingFace.useServerProxy ?? false;
+  private readonly proxyUrl = environment.huggingFace.proxyUrl ?? '/api/hf';
+  private readonly canUseRemoteApi = environment.huggingFace.enabled && (this.useServerProxy || !!this.directApiToken);
   private readonly modelId = environment.huggingFace.model;
   private readonly classificationModelId = environment.huggingFace.classificationModel;
   private readonly imageModelId = environment.huggingFace.imageModel;
-  private readonly routerUrl = 'https://router.huggingface.co/v1/chat/completions';
-  private readonly classificationUrl = `https://router.huggingface.co/hf-inference/models/${this.classificationModelId}`;
-  private readonly imageUrl = `https://router.huggingface.co/hf-inference/models/${this.imageModelId}`;
+  private readonly routerUrl = this.useServerProxy
+    ? `${this.proxyUrl}?target=chat`
+    : 'https://router.huggingface.co/v1/chat/completions';
+  private readonly classificationUrl = this.useServerProxy
+    ? `${this.proxyUrl}?target=classification&model=${encodeURIComponent(this.classificationModelId)}`
+    : `https://router.huggingface.co/hf-inference/models/${this.classificationModelId}`;
+  private readonly imageUrl = this.useServerProxy
+    ? `${this.proxyUrl}?target=image&model=${encodeURIComponent(this.imageModelId)}`
+    : `https://router.huggingface.co/hf-inference/models/${this.imageModelId}`;
   private readonly classificationCandidates: Array<{ label: string; category: string }> = [
     { label: 'Tecnologia y videojuegos de PC', category: 'Tecnologia' },
     { label: 'Ciencias y espacio', category: 'Ciencias' },
@@ -63,14 +73,11 @@ export class HuggingfaceService {
   async generateQuiz(request: QuizGenerationRequest): Promise<GeneratedQuiz> {
     const questionCount = this.normalizeQuestionCount(request.questionCount);
 
-    if (!environment.huggingFace.enabled || !environment.huggingFace.apiToken) {
+    if (!this.canUseRemoteApi) {
       return this.buildLocalQuiz(request.topic, request.difficulty, questionCount);
     }
 
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${environment.huggingFace.apiToken}`,
-      'Content-Type': 'application/json'
-    });
+    const headers = this.buildHuggingFaceHeaders();
 
     try {
       const parsedQuiz = await this.requestQuizWithModel(
@@ -102,18 +109,14 @@ export class HuggingfaceService {
 
   async generateQuizImageBase64(quiz: GeneratedQuiz): Promise<string | null> {
     if (
-      !environment.huggingFace.enabled ||
-      !environment.huggingFace.apiToken ||
+      !this.canUseRemoteApi ||
       !environment.huggingFace.imageEnabled ||
       !this.imageModelId
     ) {
       return null;
     }
 
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${environment.huggingFace.apiToken}`,
-      'Content-Type': 'application/json'
-    });
+    const headers = this.buildHuggingFaceHeaders();
 
     const prompt = this.buildImagePrompt(quiz);
 
@@ -144,14 +147,11 @@ export class HuggingfaceService {
   }
 
   async generateEducationalQuote(topic: string = 'educacion'): Promise<EducationalQuote> {
-    if (!environment.huggingFace.enabled || !environment.huggingFace.apiToken) {
+    if (!this.canUseRemoteApi) {
       return this.buildLocalQuote(topic);
     }
 
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${environment.huggingFace.apiToken}`,
-      'Content-Type': 'application/json'
-    });
+    const headers = this.buildHuggingFaceHeaders();
 
     try {
       const response = await firstValueFrom(
@@ -248,6 +248,19 @@ export class HuggingfaceService {
 
   private delay(ms: number): Promise<void> {
     return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
+  private buildHuggingFaceHeaders(extraHeaders?: Record<string, string>): HttpHeaders {
+    const headersMap: Record<string, string> = {
+      'Content-Type': 'application/json',
+      ...(extraHeaders ?? {})
+    };
+
+    if (!this.useServerProxy && this.directApiToken) {
+      headersMap['Authorization'] = `Bearer ${this.directApiToken}`;
+    }
+
+    return new HttpHeaders(headersMap);
   }
 
   private buildMessages(
@@ -671,7 +684,7 @@ export class HuggingfaceService {
     let categories = [fallbackCategory];
     let categoryModel = 'classification-fallback';
 
-    if (!environment.huggingFace.apiToken || !this.classificationModelId) {
+    if (!this.canUseRemoteApi || !this.classificationModelId) {
       return {
         title,
         category: categories[0],
@@ -680,10 +693,7 @@ export class HuggingfaceService {
       };
     }
 
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${environment.huggingFace.apiToken}`,
-      'Content-Type': 'application/json'
-    });
+    const headers = this.buildHuggingFaceHeaders();
 
     try {
       title = await this.generateCreativeTitleFromQuiz(topic, difficulty, questions, headers);
