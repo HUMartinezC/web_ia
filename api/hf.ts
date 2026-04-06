@@ -20,6 +20,8 @@ interface ServerlessResponse {
 	send: (payload: Uint8Array) => void;
 }
 
+declare const module: { exports: unknown };
+
 function toSingleQueryValue(value: string | string[] | undefined): string {
 	if (Array.isArray(value)) {
 		return value[0] ?? '';
@@ -47,7 +49,7 @@ function resolveUpstreamUrl(req: ServerlessRequest): string | null {
 	return null;
 }
 
-export default async function handler(req: ServerlessRequest, res: ServerlessResponse): Promise<void> {
+async function handler(req: ServerlessRequest, res: ServerlessResponse): Promise<void> {
 	if (req.method === 'OPTIONS') {
 		res.status(204).end();
 		return;
@@ -95,3 +97,5 @@ export default async function handler(req: ServerlessRequest, res: ServerlessRes
 		res.status(502).json({ error: 'Failed to reach Hugging Face from Vercel function.' });
 	}
 }
+
+module.exports = handler;
