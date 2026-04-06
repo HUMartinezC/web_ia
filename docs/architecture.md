@@ -10,3 +10,8 @@
 ## Scope of this phase
 
 This phase only establishes the project shell and a minimal landing route.
+
+## Folder structure
+
+The app folders were created in advance of implementation so that services,
+models, layout, pages, and shared UI can be added without reshaping the tree later.

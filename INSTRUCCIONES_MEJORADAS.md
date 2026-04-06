@@ -34,7 +34,7 @@ Este documento es tu **referencia principal y permanente** durante todo el desar
 > El agente debe mantener esta sección actualizada tras cada sesión de trabajo.
 
 - [x] Scaffold del proyecto Angular creado
-- [ ] Estructura de carpetas implementada
+- [x] Estructura de carpetas implementada
 - [ ] Sidebar y layout base
 - [ ] Página `/generate` funcional
 - [ ] Integración Hugging Face Modelo 1 (generación)
