@@ -13,3 +13,10 @@
 - Prompt: Continue with point 2 and implement the folder structure.
 - Result: Created the `src/app/` substructure for core, layout, pages, and shared code.
 - Justification: The tree needs to exist before layout and feature work can be added cleanly.
+
+## 2026-04-06 - Phase 3
+
+- Tool: Copilot Chat
+- Prompt: Continue with point 3 and build the sidebar and layout base.
+- Result: Added the persistent sidebar shell and placeholder section routes.
+- Justification: The main navigation and visual frame need to exist before page-specific work.

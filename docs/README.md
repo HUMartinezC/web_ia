@@ -6,6 +6,7 @@ Initial scaffold for the QuizAI project.
 
 - Angular 21 standalone bootstrap created.
 - Core app folder structure created under `src/app/`.
+- Sidebar shell and base route placeholders created.
 - Minimal home route available.
 - Base docs created for the development workflow.
 

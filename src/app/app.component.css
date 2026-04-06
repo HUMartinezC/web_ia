@@ -2,3 +2,39 @@
   display: block;
   min-height: 100vh;
 }
+
+.app-shell {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  min-height: 100vh;
+}
+
+.app-content {
+  min-width: 0;
+  padding: 1.5rem;
+}
+
+.page-frame {
+  min-height: calc(100vh - 3rem);
+  padding: 1.5rem 1.75rem;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius-lg) - 4px);
+  background: rgba(24, 28, 41, 0.78);
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(12px);
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-content {
+    padding: 1rem;
+  }
+
+  .page-frame {
+    min-height: auto;
+    padding: 1rem;
+  }
+}

@@ -3,19 +3,19 @@
 }
 
 .home-shell {
-  min-height: 100vh;
+  min-height: 100%;
   display: grid;
-  place-items: center;
-  padding: 2rem;
+  place-items: start;
+  padding: 0;
 }
 
 .hero-card {
   width: min(100%, 760px);
-  padding: 2.5rem;
+  padding: 1rem 0 0;
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  background: linear-gradient(180deg, rgba(35, 40, 59, 0.92), rgba(35, 40, 59, 0.76));
-  box-shadow: var(--shadow);
+  background: transparent;
+  box-shadow: none;
 }
 
 .eyebrow {
