@@ -14,3 +14,5 @@
 - Silent fallback can hide real integration failures; explicit errors are more useful while stabilizing provider connectivity.
 - HF responses may not strictly respect schema types (e.g., `options` as string/object); parser normalization is required before binding in Angular templates.
 - Guaranteeing 4 options per question prevents broken preview cards and avoids NG02200 iterable errors.
+- Parsing quantity expressions (e.g., "20 preguntas") directly from the free-text prompt keeps UX simple while still allowing configurable quiz size.
+- A generated preview should be interactive; adding selection, submit, and score flow exposes data-quality issues much earlier.

@@ -15,9 +15,11 @@
           type="text"
           [value]="topic()"
           (input)="setTopic($any($event.target).value)"
-          placeholder="e.g. World War II, Python basics"
+          placeholder="e.g. Crea un cuestionario de 20 preguntas de programación"
         >
       </label>
+
+      <p class="hint-message">Detected questions: {{ detectedQuestionCount() }}</p>
 
       <fieldset class="field difficulty-field">
         <legend>Difficulty</legend>
@@ -54,13 +56,35 @@
               <h3>{{ question.question }}</h3>
               <ul>
                 <li *ngFor="let option of question.options; let optionIndex = index">
-                  <span class="option-marker">{{ optionIndex + 1 }}</span>
-                  <span>{{ option }}</span>
+                  <button
+                    type="button"
+                    class="option-button"
+                    [ngClass]="{
+                      selected: getOptionState(index, optionIndex, question.correctIndex) === 'selected',
+                      correct: getOptionState(index, optionIndex, question.correctIndex) === 'correct',
+                      incorrect: getOptionState(index, optionIndex, question.correctIndex) === 'incorrect'
+                    }"
+                    (click)="selectAnswer(index, optionIndex)"
+                  >
+                    <span class="option-marker">{{ optionIndex + 1 }}</span>
+                    <span>{{ option }}</span>
+                  </button>
                 </li>
               </ul>
             </div>
           </article>
         </div>
+
+        <div class="quiz-actions">
+          <button type="button" class="submit-button" [disabled]="!canSubmit()" (click)="submitQuiz()">
+            Submit test
+          </button>
+          <button type="button" class="reset-button" (click)="resetAnswers()">Reset</button>
+        </div>
+
+        <p class="result-message" *ngIf="isSubmitted() && generatedQuiz() && score() !== null">
+          Result: {{ score() }}/{{ generatedQuiz()!.questions.length }}
+        </p>
       </ng-container>
 
       <ng-template #emptyState>

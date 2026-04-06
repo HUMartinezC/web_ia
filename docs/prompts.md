@@ -62,3 +62,17 @@
 - Prompt: Fix generation where the first question appears and the rest break or render without answers, based on screenshots in `referencias/errors/`.
 - Result: Hardened response parsing to normalize mixed question/option formats and always produce 4 iterable options with a valid correct index.
 - Justification: The model can return options as strings or objects; Angular template expects iterable arrays and crashed with NG02200.
+
+## 2026-04-06 - Reapply after git conflict
+
+- Tool: Copilot Chat
+- Prompt: Reapply the generation parsing fix after a merge conflict reverted it.
+- Result: Restored robust normalization logic to avoid partial rendering and missing options.
+- Justification: Conflict resolution accidentally removed the parser hardening and reintroduced the same UI failure.
+
+## 2026-04-06 - Variable question count + interactive submit
+
+- Tool: Copilot Chat
+- Prompt: Support prompts like "Crea un cuestionario de 20 preguntas de programación" and allow selecting answers plus submitting the test.
+- Result: Added automatic question-count detection from free text, passed question count to HF/fallback generation, and implemented answer selection with submit/reset and score display.
+- Justification: The generated quiz needed to be actionable, not just preview-only, and must respect user-requested question counts.

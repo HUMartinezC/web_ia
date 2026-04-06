@@ -17,4 +17,5 @@ export interface GeneratedQuiz {
 export interface QuizGenerationRequest {
   topic: string;
   difficulty: Difficulty;
+  questionCount?: number;
 }

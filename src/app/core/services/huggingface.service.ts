@@ -20,11 +20,13 @@ export class HuggingfaceService {
   private readonly routerUrl = 'https://router.huggingface.co/v1/chat/completions';
 
   async generateQuiz(request: QuizGenerationRequest): Promise<GeneratedQuiz> {
+    const questionCount = this.normalizeQuestionCount(request.questionCount);
+
     if (!environment.huggingFace.enabled || !environment.huggingFace.apiToken) {
-      return this.buildLocalQuiz(request.topic, request.difficulty);
+      return this.buildLocalQuiz(request.topic, request.difficulty, questionCount);
     }
 
-    const messages = this.buildMessages(request.topic, request.difficulty);
+    const messages = this.buildMessages(request.topic, request.difficulty, questionCount);
     const headers = new HttpHeaders({
       Authorization: `Bearer ${environment.huggingFace.apiToken}`,
       'Content-Type': 'application/json'
@@ -38,7 +40,7 @@ export class HuggingfaceService {
             model: this.modelId,
             messages,
             temperature: 0.2,
-            max_tokens: 900,
+            max_tokens: this.getMaxTokens(questionCount),
             response_format: { type: 'json_object' }
           },
           { headers }
@@ -51,7 +53,7 @@ export class HuggingfaceService {
         throw new Error('Hugging Face returned an empty response payload.');
       }
 
-      const parsedQuiz = this.parseQuizResponse(generatedText, request.topic, request.difficulty);
+      const parsedQuiz = this.parseQuizResponse(generatedText, request.topic, request.difficulty, questionCount);
 
       return {
         ...parsedQuiz,
@@ -63,7 +65,11 @@ export class HuggingfaceService {
     }
   }
 
-  private buildMessages(topic: string, difficulty: Difficulty): Array<{ role: 'system' | 'user'; content: string }> {
+  private buildMessages(
+    topic: string,
+    difficulty: Difficulty,
+    questionCount: number
+  ): Array<{ role: 'system' | 'user'; content: string }> {
     return [
       {
         role: 'system',
@@ -72,7 +78,7 @@ export class HuggingfaceService {
       },
       {
         role: 'user',
-        content: `Generate a ${difficulty} quiz about "${topic}" with exactly 5 multiple-choice questions.`
+        content: `Generate a ${difficulty} quiz about "${topic}" with exactly ${questionCount} multiple-choice questions.`
       }
     ];
   }
@@ -81,7 +87,12 @@ export class HuggingfaceService {
     return response.choices?.[0]?.message?.content ?? '';
   }
 
-  private parseQuizResponse(text: string, topic: string, difficulty: Difficulty): GeneratedQuiz {
+  private parseQuizResponse(
+    text: string,
+    topic: string,
+    difficulty: Difficulty,
+    questionCount: number
+  ): GeneratedQuiz {
     const jsonText = this.extractJsonPayload(text);
 
     if (!jsonText) {
@@ -96,7 +107,7 @@ export class HuggingfaceService {
       };
 
       const rawQuestions = this.extractRawQuestions(parsed);
-      const questions = rawQuestions.slice(0, 5).map((question, index) =>
+      const questions = rawQuestions.slice(0, questionCount).map((question, index) =>
         this.normalizeQuestion(question, topic, index)
       );
 
@@ -114,6 +125,19 @@ export class HuggingfaceService {
     } catch {
       throw new Error('Unable to parse quiz JSON from Hugging Face response.');
     }
+  }
+
+  private normalizeQuestionCount(value: number | undefined): number {
+    if (!value || Number.isNaN(value)) {
+      return 5;
+    }
+
+    return Math.max(3, Math.min(30, Math.floor(value)));
+  }
+
+  private getMaxTokens(questionCount: number): number {
+    const estimated = questionCount * 220;
+    return Math.max(900, Math.min(6000, estimated));
   }
 
   private extractRawQuestions(parsed: { questions?: unknown[]; quiz?: unknown[]; items?: unknown[] }): unknown[] {
@@ -332,13 +356,15 @@ export class HuggingfaceService {
     return 'Unexpected Hugging Face error.';
   }
 
-  private buildLocalQuiz(topic: string, difficulty: Difficulty): GeneratedQuiz {
+  private buildLocalQuiz(topic: string, difficulty: Difficulty, questionCount: number): GeneratedQuiz {
     return {
       topic,
       difficulty,
       source: 'local',
       model: 'local-fallback',
-      questions: [1, 2, 3, 4, 5].map((index) => this.createQuestion(topic, difficulty, index))
+      questions: Array.from({ length: questionCount }, (_, index) =>
+        this.createQuestion(topic, difficulty, index + 1)
+      )
     };
   }
 
