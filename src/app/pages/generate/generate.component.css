@@ -217,40 +217,11 @@ h3 {
 }
 
 .question-card li {
-  display: block;
-  color: var(--muted);
-}
-
-.option-button {
-  width: 100%;
   display: grid;
   grid-template-columns: 28px minmax(0, 1fr);
   gap: 0.65rem;
   align-items: center;
-  text-align: left;
-  padding: 0.45rem 0.55rem;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.02);
-  color: inherit;
-}
-
-.option-button.selected {
-  border-color: rgba(245, 230, 66, 0.6);
-  background: rgba(245, 230, 66, 0.12);
-  color: var(--text);
-}
-
-.option-button.correct {
-  border-color: rgba(78, 205, 196, 0.7);
-  background: rgba(78, 205, 196, 0.12);
-  color: var(--text);
-}
-
-.option-button.incorrect {
-  border-color: rgba(255, 107, 107, 0.7);
-  background: rgba(255, 107, 107, 0.14);
-  color: var(--text);
+  color: var(--muted);
 }
 
 .option-marker {
@@ -279,14 +250,13 @@ h3 {
   margin-top: 0.25rem;
 }
 
-.submit-button,
-.reset-button {
+.submit-button {
   border-radius: 999px;
-  padding: 0.7rem 1rem;
-  border: 1px solid rgba(255, 255, 255, 0.16);
 }
 
 .submit-button {
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.16);
   background: linear-gradient(180deg, var(--primary), #c9bc25);
   color: #1d1f23;
   font-weight: 700;
@@ -295,11 +265,6 @@ h3 {
 .submit-button:disabled {
   opacity: 0.55;
   cursor: not-allowed;
-}
-
-.reset-button {
-  background: rgba(255, 255, 255, 0.05);
-  color: var(--text);
 }
 
 .result-message {

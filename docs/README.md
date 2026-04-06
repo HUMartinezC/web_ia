@@ -7,14 +7,19 @@ Initial scaffold for the QuizAI project.
 - Angular 21 standalone bootstrap created.
 - Core app folder structure created under `src/app/`.
 - Sidebar shell and base route placeholders created.
-- Generate page now has a functional local preview flow.
-- Hugging Face service wired with environment-based configuration and fallback.
+- Generate page now provides preview-only flow and starts quiz sessions.
+- Dedicated `/quiz/:id` route implements one-question-per-page solving.
+- History page now lists in-progress/completed quizzes with continue, repeat, and delete actions.
+- Stats page now shows global metrics, streaks, and accuracy by category.
+- Hugging Face service now uses Model 1 for question generation and Model 2 for title/category enrichment.
+- Each generated quiz now attempts to create an IA cover image, persisted as base64 in localStorage.
+- History now renders as a gallery of quiz cards (image + title) with existing actions and filters.
 - Minimal home route available.
 - Base docs created for the development workflow.
 
 ## Next phase
 
-Quiz flow implementation for answering and reviewing results.
+Category classification integration (HF Model 2) and final deployment.
 
 ## Hugging Face configuration
 

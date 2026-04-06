@@ -38,11 +38,13 @@ Este documento es tu **referencia principal y permanente** durante todo el desar
 - [x] Sidebar y layout base
 - [x] Página `/generate` funcional
 - [x] Integración Hugging Face Modelo 1 (generación)
-- [ ] Página `/quiz/:id` funcional
-- [ ] Persistencia en `localStorage`
-- [ ] Integración Hugging Face Modelo 2 (clasificación)
-- [ ] Página `/history` funcional
-- [ ] Página `/stats` funcional
+- [x] Página `/quiz/:id` funcional
+- [x] Persistencia en `localStorage`
+- [x] Integración Hugging Face Modelo 2 (clasificación)
+- [x] Página `/history` funcional
+- [x] Página `/stats` funcional
+- [x] Generación de imagen por quiz integrada
+- [x] Historial en modo galería (imagen + título)
 - [ ] Assets de IA integrados (imágenes/vídeo)
 - [ ] Despliegue en GitHub Pages
 - [ ] Documentación `docs/` completa
@@ -52,6 +54,8 @@ Este documento es tu **referencia principal y permanente** durante todo el desar
 ## 🎯 Visión del Proyecto
 
 Crear una **aplicación web educacional** donde el usuario introduce un tema, selecciona un nivel de dificultad y recibe un cuestionario generado por un modelo de Hugging Face. La app registra el historial, muestra métricas de progreso y clasifica los tests por categoría mediante un segundo modelo de IA.
+
+Cada quiz debe incluir ademas una **imagen generada por IA** basada en su contenido, reutilizada luego en el historial para visualizacion tipo galeria.
 
 ---
 
@@ -120,13 +124,15 @@ docs/
                     ↓
          [HF Model 1] genera cuestionario (5–10 preguntas)
                     ↓
+        [HF Image] genera 1 imagen por quiz
+                    ↓
               [Quiz] → usuario responde
                     ↓
          resultado guardado en localStorage
                     ↓
          [HF Model 2] clasifica el test por categoría
                     ↓
-         [History] muestra tests pasados y permite repetirlos
+         [History] muestra tests pasados como galeria (imagen + titulo)
          [Stats]   muestra métricas globales y categorías
 ```
 
@@ -151,9 +157,17 @@ docs/
 
 ### 3. `/history` — Tests guardados
 
-- Lista de tests previos con: tema, categoría, fecha, puntuación
+- Vista tipo galeria de tests previos con: imagen + titulo del quiz
+- Metadatos por tarjeta: categoria, fecha, puntuacion y estado
 - Opción de **repetir** o **eliminar** cada test
 - Filtros por categoría y dificultad
+
+### 3.1 Imagen por quiz
+
+- Al finalizar la generacion del quiz, disparar una llamada de IA para crear una imagen relacionada al contenido.
+- Guardar URL/base64 de la imagen junto a la sesion del quiz en `localStorage`.
+- Si la generacion de imagen falla, usar placeholder visual y permitir reintento.
+- Mostrar siempre la imagen en History y reutilizarla en la tarjeta de resumen del quiz.
 
 ### 4. `/stats` — Métricas
 
@@ -193,6 +207,13 @@ Respond ONLY in valid JSON following this schema:
 - **Modelo candidato:** `facebook/bart-large-mnli`
 
 > ⚠️ Ambos modelos se usan mediante la **Inference API gratuita** de Hugging Face. Gestionar errores de rate limit con reintentos y mensajes claros al usuario.
+
+### Generación de imagen por quiz
+
+- **Tarea:** `text-to-image`
+- Generar una imagen por quiz usando tema + categoria + dificultad + resumen de preguntas.
+- Persistir identificador o URL del asset en la sesion del quiz.
+- Si no hay soporte estable en frontend para acceso directo, permitir fallback a imagen placeholder con etiqueta de estado.
 
 ---
 
@@ -250,6 +271,8 @@ Cada archivo debe completarse **durante** el desarrollo, no al final.
 - [ ] Repositorio público con historial de commits descriptivos
 - [ ] Carpeta `docs/` completa
 - [ ] Al menos 2 modelos de Hugging Face integrados
+- [ ] Imagen generada por IA para cada quiz y mostrada en el historial
+- [ ] Historial presentado en formato galería (imagen + título)
 - [ ] Imágenes y/o vídeos generados con IA coherentes con el diseño
 - [ ] Presentación en clase: demo en vivo + explicación del proceso de *vibe coding*
 

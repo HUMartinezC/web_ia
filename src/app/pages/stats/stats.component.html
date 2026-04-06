@@ -1,5 +1,48 @@
-<section class="page-copy">
-  <p class="eyebrow">Stats</p>
-  <h1>Progress metrics</h1>
-  <p class="lead">Base route ready for learning analytics.</p>
+<section class="stats-page">
+  <header class="page-copy">
+    <p class="eyebrow">Stats</p>
+    <h1>Progress metrics</h1>
+    <p class="lead">Track your performance across completed quizzes.</p>
+  </header>
+
+  <section class="kpi-grid">
+    <article class="kpi-card">
+      <span>Total quizzes</span>
+      <strong>{{ totalQuizzes() }}</strong>
+    </article>
+    <article class="kpi-card">
+      <span>Global accuracy</span>
+      <strong>{{ globalAccuracy() }}%</strong>
+    </article>
+    <article class="kpi-card">
+      <span>Current streak</span>
+      <strong>{{ currentStreak() }}</strong>
+    </article>
+    <article class="kpi-card">
+      <span>Best streak</span>
+      <strong>{{ bestStreak() }}</strong>
+    </article>
+  </section>
+
+  <section class="category-panel" *ngIf="categoryStats().length; else noStats">
+    <h2>Accuracy by category</h2>
+    <div class="category-list">
+      <article class="category-item" *ngFor="let item of categoryStats(); trackBy: trackByCategory">
+        <div class="category-label">
+          <span>{{ item.category }}</span>
+          <span>{{ item.accuracy }}% ({{ item.sessions }} quizzes)</span>
+        </div>
+        <div class="category-bar">
+          <span [style.width.%]="item.accuracy"></span>
+        </div>
+      </article>
+    </div>
+  </section>
+
+  <ng-template #noStats>
+    <section class="empty-state">
+      <p>No completed quizzes yet. Complete a quiz to see metrics.</p>
+      <button type="button" class="refresh" (click)="reloadStats()">Refresh stats</button>
+    </section>
+  </ng-template>
 </section>

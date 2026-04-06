@@ -1,0 +1,149 @@
+:host {
+  display: block;
+}
+
+.quiz-page {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.eyebrow {
+  margin: 0;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  font-size: 0.8rem;
+}
+
+.lead {
+  margin: 0;
+  color: var(--muted);
+}
+
+.quiz-header h1,
+.question-panel h2,
+.result-panel h2 {
+  margin: 0.25rem 0 0.35rem;
+}
+
+.question-panel,
+.result-panel {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+  background: linear-gradient(180deg, rgba(35, 40, 59, 0.86), rgba(29, 33, 48, 0.88));
+}
+
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  color: var(--muted);
+  margin-bottom: 0.45rem;
+}
+
+.progress-bar {
+  height: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 1rem;
+}
+
+.progress-bar span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary), #c9bc25);
+}
+
+.option-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.option-button {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr);
+  gap: 0.65rem;
+  align-items: center;
+  text-align: left;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text);
+  padding: 0.65rem 0.75rem;
+}
+
+.option-button.selected {
+  border-color: rgba(245, 230, 66, 0.65);
+  background: rgba(245, 230, 66, 0.14);
+}
+
+.option-index {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.action-row {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.primary,
+.secondary {
+  border-radius: 999px;
+  padding: 0.7rem 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.primary {
+  background: linear-gradient(180deg, var(--primary), #c9bc25);
+  color: #1d1f23;
+  font-weight: 700;
+}
+
+.secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+}
+
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.summary-list {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.summary-item {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 0.75rem;
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.summary-item h3 {
+  margin: 0 0 0.5rem;
+}
+
+.summary-item p {
+  margin: 0.2rem 0;
+}
+
+.good {
+  color: var(--accent);
+}
+
+.bad {
+  color: var(--danger);
+}

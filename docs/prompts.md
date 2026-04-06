@@ -76,3 +76,52 @@
 - Prompt: Support prompts like "Crea un cuestionario de 20 preguntas de programación" and allow selecting answers plus submitting the test.
 - Result: Added automatic question-count detection from free text, passed question count to HF/fallback generation, and implemented answer selection with submit/reset and score display.
 - Justification: The generated quiz needed to be actionable, not just preview-only, and must respect user-requested question counts.
+
+## 2026-04-06 - Generate session persistence
+
+- Tool: Copilot Chat
+- Prompt: Keep the test state in generate route when navigating away and back (selected answers, submission state, etc.).
+- Result: Added temporary persistence and restoration of generate state via `localStorage` (quiz, answers, submitted flag, score, topic, and status messages).
+- Justification: The user flow requires continuity while browsing other routes without losing in-progress answers.
+
+## 2026-04-06 - Preview-only generate + dedicated quiz route
+
+- Tool: Copilot Chat
+- Prompt: Show only preview in generate and move quiz resolution to its specific route with one-question-per-page flow and final result.
+- Result: Refactored generate to start quiz sessions, created `/quiz/:id` interactive route, and persisted quiz session state in `localStorage`.
+- Justification: Generation and resolution needed clear separation, plus route-safe progress continuity.
+
+## 2026-04-06 - History implementation
+
+- Tool: Copilot Chat
+- Prompt: Implement history for partial/completed quizzes with repeat and delete.
+- Result: Added functional `/history` page with search/status/difficulty filters and actions to continue, repeat, and delete saved sessions.
+- Justification: The workflow requires managing quizzes beyond a single run, including in-progress recovery and replay.
+
+## 2026-04-06 - Stats implementation
+
+- Tool: Copilot Chat
+- Prompt: Continue with metrics by implementing a functional stats page.
+- Result: Added `/stats` dashboard with totals, global accuracy, streaks, and category accuracy bars from persisted sessions.
+- Justification: The project requires measurable learning progress beyond raw history listings.
+
+## 2026-04-06 - HF Model 2 naming/classification
+
+- Tool: Copilot Chat
+- Prompt: Use a second model to correctly name each generated test.
+- Result: Added a second HF call for quiz metadata (`title`, `category`) after question generation, with robust fallback on failures.
+- Justification: Separating content generation from naming/classification improves title consistency and downstream analytics quality.
+
+## 2026-04-06 - Image per quiz + gallery history
+
+- Tool: Copilot Chat
+- Prompt: Integrate text-to-image generation (`stabilityai/stable-diffusion-xl-base-1.0`) and store output as base64 for each quiz.
+- Result: Added image generation call, blob-to-base64 conversion, session persistence, and gallery-style History cards (image + title).
+- Justification: The product requires a visual identity per quiz and a gallery browsing experience in History.
+
+## 2026-04-06 - Image placeholder fix
+
+- Tool: Copilot Chat
+- Prompt: Fix history cards showing placeholders only despite image generation integration.
+- Result: Added robust image response parsing (binary and JSON), model-loading retry logic, and delayed retries before fallback.
+- Justification: HF image endpoints can return JSON loading/error payloads before returning binary images; handling this avoids false null images.

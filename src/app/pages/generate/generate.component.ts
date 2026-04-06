@@ -1,8 +1,22 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
+import { Router } from '@angular/router';
 
 import { HuggingfaceService } from '../../core/services/huggingface.service';
 import { Difficulty, GeneratedQuiz } from '../../core/models/quiz.model';
+import { QuizSessionService } from '../../core/services/quiz-session.service';
+
+interface GenerateSessionState {
+  topic: string;
+  difficulty: Difficulty;
+  generatedQuiz: GeneratedQuiz | null;
+  statusMessage: string;
+  modelStatus: string;
+  detectedQuestionCount: number;
+  activeSessionId: string | null;
+}
+
+const GENERATE_SESSION_KEY = 'quizai.generate.session.v1';
 
 @Component({
   selector: 'app-generate',
@@ -13,6 +27,8 @@ import { Difficulty, GeneratedQuiz } from '../../core/models/quiz.model';
 })
 export class GenerateComponent {
   private readonly huggingFaceService = inject(HuggingfaceService);
+  private readonly quizSessionService = inject(QuizSessionService);
+  private readonly router = inject(Router);
 
   readonly topic = signal('');
   readonly difficulty = signal<Difficulty>('normal');
@@ -21,28 +37,24 @@ export class GenerateComponent {
   readonly statusMessage = signal('Ready to generate a quiz preview.');
   readonly modelStatus = signal('Model: local fallback ready');
   readonly detectedQuestionCount = signal(5);
-  readonly selectedAnswers = signal<number[]>([]);
-  readonly isSubmitted = signal(false);
-  readonly score = signal<number | null>(null);
+  readonly activeSessionId = signal<string | null>(null);
 
   readonly canGenerate = computed(() => this.topic().trim().length >= 3 && !this.isGenerating());
-  readonly canSubmit = computed(() => {
-    const quiz = this.generatedQuiz();
-    if (!quiz || this.isSubmitted()) {
-      return false;
-    }
+  readonly canStartQuiz = computed(() => Boolean(this.generatedQuiz() && this.activeSessionId()));
 
-    const answers = this.selectedAnswers();
-    return answers.length === quiz.questions.length && answers.every((value) => value >= 0);
-  });
+  constructor() {
+    this.restoreSession();
+  }
 
   setTopic(value: string): void {
     this.topic.set(value);
     this.detectedQuestionCount.set(this.extractQuestionCount(value));
+    this.persistSession();
   }
 
   setDifficulty(value: Difficulty): void {
     this.difficulty.set(value);
+    this.persistSession();
   }
 
   async generateQuiz(): Promise<void> {
@@ -55,92 +67,57 @@ export class GenerateComponent {
       return;
     }
 
+    this.generatedQuiz.set(null);
+    this.activeSessionId.set(null);
     this.isGenerating.set(true);
     this.statusMessage.set('Generating quiz with Hugging Face...');
+    this.modelStatus.set('Model: generating...');
+    this.persistSession();
 
     try {
-      const quiz = await this.huggingFaceService.generateQuiz({
+      const generatedQuiz = await this.huggingFaceService.generateQuiz({
         topic: topic.length >= 3 ? topic : topicInput,
         difficulty: this.difficulty(),
         questionCount
       });
 
+      this.statusMessage.set('Generating cover image...');
+
+      const coverImageBase64 = await this.huggingFaceService.generateQuizImageBase64(generatedQuiz);
+      const quiz: GeneratedQuiz = {
+        ...generatedQuiz,
+        coverImageBase64: coverImageBase64 ?? undefined
+      };
+
+      const session = this.quizSessionService.createSession(quiz);
+
       this.generatedQuiz.set(quiz);
-      this.selectedAnswers.set(Array(quiz.questions.length).fill(-1));
-      this.isSubmitted.set(false);
-      this.score.set(null);
+      this.activeSessionId.set(session.id);
       this.detectedQuestionCount.set(quiz.questions.length);
       this.modelStatus.set(quiz.source === 'huggingface' ? `Model: ${quiz.model}` : 'Model: local fallback ready');
       this.statusMessage.set(
         quiz.source === 'huggingface'
-          ? `Quiz generated with Hugging Face (${quiz.questions.length} questions).`
+          ? `Quiz generated and named with Hugging Face (${quiz.questions.length} questions).`
           : `Hugging Face is not configured, so the local fallback preview was used (${quiz.questions.length} questions).`
       );
+      this.persistSession();
     } catch (error) {
       this.statusMessage.set(error instanceof Error ? error.message : 'Unable to generate quiz.');
       this.modelStatus.set('Model: generation failed');
+      this.persistSession();
     } finally {
       this.isGenerating.set(false);
     }
   }
 
-  selectAnswer(questionIndex: number, optionIndex: number): void {
-    if (this.isSubmitted()) {
+  startQuiz(): void {
+    const sessionId = this.activeSessionId();
+
+    if (!sessionId) {
       return;
     }
 
-    const answers = [...this.selectedAnswers()];
-    answers[questionIndex] = optionIndex;
-    this.selectedAnswers.set(answers);
-  }
-
-  submitQuiz(): void {
-    const quiz = this.generatedQuiz();
-    if (!quiz || !this.canSubmit()) {
-      return;
-    }
-
-    const answers = this.selectedAnswers();
-    const totalCorrect = quiz.questions.reduce(
-      (count, question, index) => (answers[index] === question.correctIndex ? count + 1 : count),
-      0
-    );
-
-    this.score.set(totalCorrect);
-    this.isSubmitted.set(true);
-    this.statusMessage.set(`Quiz submitted: ${totalCorrect}/${quiz.questions.length} correct.`);
-  }
-
-  resetAnswers(): void {
-    const quiz = this.generatedQuiz();
-    if (!quiz) {
-      return;
-    }
-
-    this.selectedAnswers.set(Array(quiz.questions.length).fill(-1));
-    this.isSubmitted.set(false);
-    this.score.set(null);
-    this.statusMessage.set('Answers reset. You can try again.');
-  }
-
-  isOptionSelected(questionIndex: number, optionIndex: number): boolean {
-    return this.selectedAnswers()[questionIndex] === optionIndex;
-  }
-
-  getOptionState(questionIndex: number, optionIndex: number, correctIndex: number): 'selected' | 'correct' | 'incorrect' | 'default' {
-    if (!this.isSubmitted()) {
-      return this.isOptionSelected(questionIndex, optionIndex) ? 'selected' : 'default';
-    }
-
-    if (optionIndex === correctIndex) {
-      return 'correct';
-    }
-
-    if (this.isOptionSelected(questionIndex, optionIndex) && optionIndex !== correctIndex) {
-      return 'incorrect';
-    }
-
-    return 'default';
+    this.router.navigate(['/quiz', sessionId]);
   }
 
   private extractQuestionCount(input: string): number {
@@ -165,5 +142,49 @@ export class GenerateComponent {
       .trim();
 
     return cleaned;
+  }
+
+  private persistSession(): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    const session: GenerateSessionState = {
+      topic: this.topic(),
+      difficulty: this.difficulty(),
+      generatedQuiz: this.generatedQuiz(),
+      statusMessage: this.statusMessage(),
+      modelStatus: this.modelStatus(),
+      detectedQuestionCount: this.detectedQuestionCount(),
+      activeSessionId: this.activeSessionId()
+    };
+
+    localStorage.setItem(GENERATE_SESSION_KEY, JSON.stringify(session));
+  }
+
+  private restoreSession(): void {
+    if (typeof localStorage === 'undefined') {
+      return;
+    }
+
+    const raw = localStorage.getItem(GENERATE_SESSION_KEY);
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const parsed = JSON.parse(raw) as Partial<GenerateSessionState>;
+      const restoredQuiz = parsed.generatedQuiz ?? null;
+
+      this.topic.set(parsed.topic ?? '');
+      this.difficulty.set(parsed.difficulty ?? 'normal');
+      this.generatedQuiz.set(restoredQuiz);
+      this.statusMessage.set(parsed.statusMessage ?? 'Session restored.');
+      this.modelStatus.set(parsed.modelStatus ?? 'Model: local fallback ready');
+      this.detectedQuestionCount.set(parsed.detectedQuestionCount ?? this.extractQuestionCount(parsed.topic ?? ''));
+      this.activeSessionId.set(parsed.activeSessionId ?? null);
+    } catch {
+      localStorage.removeItem(GENERATE_SESSION_KEY);
+    }
   }
 }

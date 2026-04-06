@@ -16,3 +16,11 @@
 - Guaranteeing 4 options per question prevents broken preview cards and avoids NG02200 iterable errors.
 - Parsing quantity expressions (e.g., "20 preguntas") directly from the free-text prompt keeps UX simple while still allowing configurable quiz size.
 - A generated preview should be interactive; adding selection, submit, and score flow exposes data-quality issues much earlier.
+- Route changes in SPA flows can silently reset component state; persisting in-progress quiz data avoids user frustration.
+- Session restoration needs normalization of answer arrays against current quiz length to avoid inconsistent UI states.
+- Keeping `generate` as preview-only and moving answer flow to `/quiz/:id` reduces component complexity and clarifies user intent.
+- A per-question route flow makes progress and submission logic easier to maintain than mixing it inside generation preview.
+- History management works best when session actions are explicit: continue for progress, duplicate for replay, delete for cleanup.
+- Sorting sessions by last update time keeps active work visible and reduces friction for interrupted quizzes.
+- Stats become much more useful when based only on submitted sessions; mixing in-progress data would skew accuracy.
+- A heuristic category pass is acceptable as intermediate step, but replacing it with Model 2 classification will improve consistency.

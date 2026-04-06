@@ -1,4 +1,4 @@
-import { HttpClient, HttpErrorResponse, HttpHeaders } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpHeaders, HttpResponse } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 
@@ -13,11 +13,46 @@ interface HuggingFaceChatResponse {
   }>;
 }
 
+interface QuizMetadata {
+  title: string;
+  category: string;
+  categories: string[];
+  model: string;
+}
+
+interface HuggingFaceZeroShotResponse {
+  labels?: string[];
+  scores?: number[];
+}
+
+interface HuggingFaceImageJsonResponse {
+  error?: string;
+  estimated_time?: number;
+  image?: string;
+}
+
 @Injectable({ providedIn: 'root' })
 export class HuggingfaceService {
   private readonly httpClient = inject(HttpClient);
   private readonly modelId = environment.huggingFace.model;
+  private readonly classificationModelId = environment.huggingFace.classificationModel;
+  private readonly imageModelId = environment.huggingFace.imageModel;
   private readonly routerUrl = 'https://router.huggingface.co/v1/chat/completions';
+  private readonly classificationUrl = `https://router.huggingface.co/hf-inference/models/${this.classificationModelId}`;
+  private readonly imageUrl = `https://router.huggingface.co/hf-inference/models/${this.imageModelId}`;
+  private readonly classificationCandidates: Array<{ label: string; category: string }> = [
+    { label: 'Tecnologia y videojuegos de PC', category: 'Tecnologia' },
+    { label: 'Ciencias y espacio', category: 'Ciencias' },
+    { label: 'Historia y civilizaciones', category: 'Historia' },
+    { label: 'Filosofia y pensamiento critico', category: 'Filosofia' },
+    { label: 'Matematicas y estadistica', category: 'Matematicas' },
+    { label: 'Geografia y paises', category: 'Geografia' },
+    { label: 'Lengua e idiomas', category: 'Lengua' },
+    { label: 'Negocios y economia', category: 'Negocios' },
+    { label: 'Arte y cultura', category: 'Arte' },
+    { label: 'Datos y analitica', category: 'Datos' },
+    { label: 'General', category: 'General' }
+  ];
 
   async generateQuiz(request: QuizGenerationRequest): Promise<GeneratedQuiz> {
     const questionCount = this.normalizeQuestionCount(request.questionCount);
@@ -26,61 +61,192 @@ export class HuggingfaceService {
       return this.buildLocalQuiz(request.topic, request.difficulty, questionCount);
     }
 
-    const messages = this.buildMessages(request.topic, request.difficulty, questionCount);
     const headers = new HttpHeaders({
       Authorization: `Bearer ${environment.huggingFace.apiToken}`,
       'Content-Type': 'application/json'
     });
 
     try {
-      const response = await firstValueFrom(
-        this.httpClient.post<HuggingFaceChatResponse>(
-          this.routerUrl,
-          {
-            model: this.modelId,
-            messages,
-            temperature: 0.2,
-            max_tokens: this.getMaxTokens(questionCount),
-            response_format: { type: 'json_object' }
-          },
-          { headers }
-        )
+      const parsedQuiz = await this.requestQuizWithModel(
+        request.topic,
+        request.difficulty,
+        questionCount,
+        headers,
+        false
       );
 
-      const generatedText = this.extractGeneratedText(response);
-
-      if (!generatedText.trim()) {
-        throw new Error('Hugging Face returned an empty response payload.');
-      }
-
-      const parsedQuiz = this.parseQuizResponse(generatedText, request.topic, request.difficulty, questionCount);
+      const metadata = await this.generateQuizMetadata(
+        parsedQuiz.originalTopic ?? parsedQuiz.topic,
+        request.difficulty,
+        parsedQuiz.questions
+      );
 
       return {
         ...parsedQuiz,
+        topic: metadata.title,
+        category: metadata.category,
+        categories: metadata.categories,
         source: 'huggingface',
-        model: this.modelId
+        model: `${this.modelId} + ${metadata.model}`
       };
     } catch (error) {
       throw new Error(this.getReadableErrorMessage(error));
     }
   }
 
+  async generateQuizImageBase64(quiz: GeneratedQuiz): Promise<string | null> {
+    if (
+      !environment.huggingFace.enabled ||
+      !environment.huggingFace.apiToken ||
+      !environment.huggingFace.imageEnabled ||
+      !this.imageModelId
+    ) {
+      return null;
+    }
+
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${environment.huggingFace.apiToken}`,
+      'Content-Type': 'application/json'
+    });
+
+    const prompt = this.buildImagePrompt(quiz);
+
+    const imageHeaders = headers.set('Accept', 'image/png');
+
+    try {
+      const maxAttempts = 3;
+
+      for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+        const result = await this.requestImageWithPossibleJson(prompt, imageHeaders);
+
+        if (result.kind === 'image' && result.data) {
+          return result.data;
+        }
+
+        if (result.kind === 'retry' && attempt < maxAttempts) {
+          await this.delay(result.waitMs);
+          continue;
+        }
+
+        break;
+      }
+
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  private async requestImageWithPossibleJson(
+    prompt: string,
+    headers: HttpHeaders
+  ): Promise<{ kind: 'image'; data: string | null } | { kind: 'retry'; waitMs: number } | { kind: 'none' }> {
+    const response = await firstValueFrom(
+      this.httpClient.post(this.imageUrl, { inputs: prompt }, { headers, responseType: 'blob', observe: 'response' })
+    );
+
+    return this.parseImageResponse(response);
+  }
+
+  private async parseImageResponse(
+    response: HttpResponse<Blob>
+  ): Promise<{ kind: 'image'; data: string | null } | { kind: 'retry'; waitMs: number } | { kind: 'none' }> {
+    const blob = response.body;
+
+    if (!blob || blob.size === 0) {
+      return { kind: 'none' };
+    }
+
+    const contentType = response.headers.get('content-type') ?? blob.type ?? '';
+    const normalizedType = contentType.toLowerCase();
+
+    if (normalizedType.includes('application/json') || normalizedType.includes('text/json')) {
+      const text = await blob.text();
+      const parsed = this.tryParseJsonDeep(text) as HuggingFaceImageJsonResponse;
+
+      if (typeof parsed?.image === 'string' && parsed.image.length > 0) {
+        return {
+          kind: 'image',
+          data: parsed.image.startsWith('data:image/') ? parsed.image : `data:image/png;base64,${parsed.image}`
+        };
+      }
+
+      if (typeof parsed?.estimated_time === 'number' && parsed.estimated_time > 0) {
+        return { kind: 'retry', waitMs: Math.min(15000, Math.max(1200, Math.round(parsed.estimated_time * 1000))) };
+      }
+
+      if (typeof parsed?.error === 'string' && /loading|currently loading|warm|please try again/i.test(parsed.error)) {
+        return { kind: 'retry', waitMs: 2500 };
+      }
+
+      return { kind: 'none' };
+    }
+
+    if (normalizedType.startsWith('image/')) {
+      return { kind: 'image', data: await this.blobToBase64Resized(blob, 768, 0.8) };
+    }
+
+    // Some providers omit content-type headers for binary image payloads.
+    return { kind: 'image', data: await this.blobToBase64Resized(blob, 768, 0.8) };
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+  }
+
   private buildMessages(
     topic: string,
     difficulty: Difficulty,
-    questionCount: number
+    questionCount: number,
+    strictSpanish: boolean
   ): Array<{ role: 'system' | 'user'; content: string }> {
+    const strictLanguageRule = strictSpanish
+      ? 'Si usas palabras en otro idioma, la respuesta se considera invalida.'
+      : 'Prioriza espanol neutro en toda la salida.';
+
     return [
       {
         role: 'system',
         content:
-          'You are a quiz generator. Return ONLY valid JSON with this schema: {"questions":[{"question":string,"options":string[4],"correctIndex":number}]}. No markdown or commentary.'
+          `Eres un generador de cuestionarios. Responde SOLO JSON valido con este esquema: {"questions":[{"question":string,"options":string[4],"correctIndex":number}]}. Todas las preguntas y opciones deben estar en espanol. ${strictLanguageRule} Sin markdown ni comentarios.`
       },
       {
         role: 'user',
-        content: `Generate a ${difficulty} quiz about "${topic}" with exactly ${questionCount} multiple-choice questions.`
+        content: `Genera un cuestionario de dificultad ${difficulty} sobre "${topic}" con exactamente ${questionCount} preguntas de opcion multiple y en espanol.`
       }
     ];
+  }
+
+  private async requestQuizWithModel(
+    topic: string,
+    difficulty: Difficulty,
+    questionCount: number,
+    headers: HttpHeaders,
+    strictSpanish: boolean
+  ): Promise<GeneratedQuiz> {
+    const messages = this.buildMessages(topic, difficulty, questionCount, strictSpanish);
+
+    const response = await firstValueFrom(
+      this.httpClient.post<HuggingFaceChatResponse>(
+        this.routerUrl,
+        {
+          model: this.modelId,
+          messages,
+          temperature: strictSpanish ? 0.1 : 0.2,
+          max_tokens: this.getMaxTokens(questionCount),
+          response_format: { type: 'json_object' }
+        },
+        { headers }
+      )
+    );
+
+    const generatedText = this.extractGeneratedText(response);
+
+    if (!generatedText.trim()) {
+      throw new Error('Hugging Face returned an empty response payload.');
+    }
+
+    return this.parseQuizResponse(generatedText, topic, difficulty, questionCount);
   }
 
   private extractGeneratedText(response: HuggingFaceChatResponse): string {
@@ -93,18 +259,8 @@ export class HuggingfaceService {
     difficulty: Difficulty,
     questionCount: number
   ): GeneratedQuiz {
-    const jsonText = this.extractJsonPayload(text);
-
-    if (!jsonText) {
-      throw new Error('Hugging Face returned a non-JSON answer.');
-    }
-
     try {
-      const parsed = JSON.parse(jsonText) as {
-        questions?: unknown[];
-        quiz?: unknown[];
-        items?: unknown[];
-      };
+      const parsed = this.parseQuizContainer(text);
 
       const rawQuestions = this.extractRawQuestions(parsed);
       const questions = rawQuestions.slice(0, questionCount).map((question, index) =>
@@ -117,6 +273,9 @@ export class HuggingfaceService {
 
       return {
         topic,
+        originalTopic: topic,
+        category: 'General',
+        categories: ['General'],
         difficulty,
         questions,
         source: 'huggingface',
@@ -156,6 +315,97 @@ export class HuggingfaceService {
     return [];
   }
 
+  private parseQuizContainer(text: string): { questions?: unknown[]; quiz?: unknown[]; items?: unknown[] } {
+    const candidates: string[] = [];
+    const trimmed = text.trim();
+
+    if (trimmed) {
+      candidates.push(trimmed);
+    }
+
+    const extracted = this.extractJsonPayload(trimmed);
+    if (extracted && extracted !== trimmed) {
+      candidates.push(extracted);
+    }
+
+    for (const candidate of candidates) {
+      const parsed = this.tryParseJsonDeep(candidate);
+      const container = this.extractQuizContainerFromUnknown(parsed);
+      if (container) {
+        return container;
+      }
+    }
+
+    throw new Error('Hugging Face returned a non-JSON answer.');
+  }
+
+  private tryParseJsonDeep(value: unknown): unknown {
+    let current = value;
+
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      if (typeof current !== 'string') {
+        return current;
+      }
+
+      const trimmed = current.trim();
+      if (!trimmed) {
+        return trimmed;
+      }
+
+      try {
+        current = JSON.parse(trimmed);
+      } catch {
+        return current;
+      }
+    }
+
+    return current;
+  }
+
+  private extractQuizContainerFromUnknown(
+    value: unknown
+  ): { questions?: unknown[]; quiz?: unknown[]; items?: unknown[] } | null {
+    if (!value || typeof value !== 'object') {
+      return null;
+    }
+
+    const asRecord = value as Record<string, unknown>;
+    if (Array.isArray(asRecord['questions']) || Array.isArray(asRecord['quiz']) || Array.isArray(asRecord['items'])) {
+      return asRecord as { questions?: unknown[]; quiz?: unknown[]; items?: unknown[] };
+    }
+
+    const directContent = this.asNonEmptyString(asRecord['content']);
+    if (directContent) {
+      const nested = this.extractQuizContainerFromUnknown(this.tryParseJsonDeep(directContent));
+      if (nested) {
+        return nested;
+      }
+    }
+
+    const messageValue = asRecord['message'];
+    if (messageValue && typeof messageValue === 'object') {
+      const messageContent = this.asNonEmptyString((messageValue as Record<string, unknown>)['content']);
+      if (messageContent) {
+        const nested = this.extractQuizContainerFromUnknown(this.tryParseJsonDeep(messageContent));
+        if (nested) {
+          return nested;
+        }
+      }
+    }
+
+    const choicesValue = asRecord['choices'];
+    if (Array.isArray(choicesValue)) {
+      for (const choice of choicesValue) {
+        const nested = this.extractQuizContainerFromUnknown(choice);
+        if (nested) {
+          return nested;
+        }
+      }
+    }
+
+    return null;
+  }
+
   private normalizeQuestion(rawQuestion: unknown, topic: string, questionIndex: number): QuizQuestion {
     if (typeof rawQuestion === 'string') {
       return this.buildQuestionWithFallbackOptions(rawQuestion, topic, questionIndex);
@@ -163,7 +413,7 @@ export class HuggingfaceService {
 
     if (!rawQuestion || typeof rawQuestion !== 'object') {
       return this.buildQuestionWithFallbackOptions(
-        `Question ${questionIndex + 1}: ${topic}`,
+        `Pregunta ${questionIndex + 1}: ${topic}`,
         topic,
         questionIndex
       );
@@ -188,7 +438,7 @@ export class HuggingfaceService {
       this.asNonEmptyString(source['text']) ??
       this.asNonEmptyString(source['statement']);
 
-    return candidate ?? `Question ${index + 1}: ${topic}`;
+    return candidate ?? `Pregunta ${index + 1}: ${topic}`;
   }
 
   private readOptions(
@@ -254,7 +504,7 @@ export class HuggingfaceService {
       .slice(0, 4);
 
     while (normalized.length < 4) {
-      normalized.push(`${topic} option ${String.fromCharCode(65 + normalized.length)}-${questionIndex + 1}`);
+      normalized.push(`${topic} opcion ${String.fromCharCode(65 + normalized.length)}-${questionIndex + 1}`);
     }
 
     return normalized;
@@ -291,7 +541,7 @@ export class HuggingfaceService {
   }
 
   private buildQuestionWithFallbackOptions(text: string, topic: string, questionIndex: number): QuizQuestion {
-    const questionText = text.trim() || `Question ${questionIndex + 1}: ${topic}`;
+    const questionText = text.trim() || `Pregunta ${questionIndex + 1}: ${topic}`;
 
     return {
       question: questionText,
@@ -356,9 +606,482 @@ export class HuggingfaceService {
     return 'Unexpected Hugging Face error.';
   }
 
-  private buildLocalQuiz(topic: string, difficulty: Difficulty, questionCount: number): GeneratedQuiz {
+  private async generateQuizMetadata(topic: string, difficulty: Difficulty, questions: QuizQuestion[]): Promise<QuizMetadata> {
+    const fallbackTitle = this.buildDeterministicTitle(topic, difficulty);
+    const fallbackCategory = this.classifyTopicCategory(topic);
+
+    let title = fallbackTitle;
+    let titleModel = 'title-fallback';
+    let categories = [fallbackCategory];
+    let categoryModel = 'classification-fallback';
+
+    if (!environment.huggingFace.apiToken || !this.classificationModelId) {
+      return {
+        title,
+        category: categories[0],
+        categories,
+        model: `${titleModel} + ${categoryModel}`
+      };
+    }
+
+    const headers = new HttpHeaders({
+      Authorization: `Bearer ${environment.huggingFace.apiToken}`,
+      'Content-Type': 'application/json'
+    });
+
+    try {
+      title = await this.generateCreativeTitleFromQuiz(topic, difficulty, questions, headers);
+      titleModel = this.modelId;
+    } catch {
+      title = fallbackTitle;
+      titleModel = 'title-fallback';
+    }
+
+    try {
+      categories = await this.classifyCategoriesWithBart(topic, questions, headers);
+      categoryModel = this.classificationModelId;
+    } catch {
+      categories = [fallbackCategory];
+      categoryModel = 'classification-fallback';
+    }
+
+    if (!categories.length) {
+      categories = [fallbackCategory];
+    }
+
     return {
-      topic,
+      title,
+      category: categories[0],
+      categories,
+      model: `${titleModel} + ${categoryModel}`
+    };
+  }
+
+  private async generateCreativeTitleFromQuiz(
+    topic: string,
+    difficulty: Difficulty,
+    questions: QuizQuestion[],
+    headers: HttpHeaders
+  ): Promise<string> {
+    const response = await firstValueFrom(
+      this.httpClient.post<HuggingFaceChatResponse>(
+        this.routerUrl,
+        {
+          model: this.modelId,
+          messages: this.buildCreativeTitleMessages(topic, difficulty, questions),
+          temperature: 0.4,
+          max_tokens: 220,
+          response_format: { type: 'json_object' }
+        },
+        { headers }
+      )
+    );
+
+    const text = this.extractGeneratedText(response);
+    const payload = this.extractJsonPayload(text);
+
+    if (!payload) {
+      return this.buildDeterministicTitle(topic, difficulty);
+    }
+
+    const parsed = this.tryParseJsonDeep(payload) as { title?: unknown };
+    return this.sanitizeGeneratedTitle(this.asNonEmptyString(parsed.title), topic, difficulty);
+  }
+
+  private buildCreativeTitleMessages(
+    topic: string,
+    difficulty: Difficulty,
+    questions: QuizQuestion[]
+  ): Array<{ role: 'system' | 'user'; content: string }> {
+    const questionDigest = questions
+      .slice(0, 5)
+      .map((question, index) => `Q${index + 1}: ${question.question}`)
+      .join(' | ');
+
+    return [
+      {
+        role: 'system',
+        content:
+          'Eres un asistente creativo de titulacion. Devuelve SOLO JSON valido con esquema {"title":string}. El titulo debe estar en espanol, tener entre 3 y 6 palabras y reflejar el contenido real del quiz. Evita prefijos redundantes como "cuestionario sobre" o "test sobre".'
+      },
+      {
+        role: 'user',
+        content: `Tema original: "${topic}". Dificultad: ${difficulty}. Contenido del quiz: ${questionDigest}. Genera un titulo creativo y claro.`
+      }
+    ];
+  }
+
+  private async classifyCategoriesWithBart(
+    topic: string,
+    questions: QuizQuestion[],
+    headers: HttpHeaders
+  ): Promise<string[]> {
+    const inputText = this.buildClassificationInput(topic, questions);
+    const candidateLabels = this.classificationCandidates.map((item) => item.label);
+
+    const response = await firstValueFrom(
+      this.httpClient.post<HuggingFaceZeroShotResponse | HuggingFaceZeroShotResponse[]>(
+        this.classificationUrl,
+        {
+          inputs: inputText,
+          parameters: {
+            candidate_labels: candidateLabels,
+            multi_label: true
+          }
+        },
+        { headers }
+      )
+    );
+
+    const normalizedResponse = Array.isArray(response) ? response[0] : response;
+    const labels = Array.isArray(normalizedResponse?.labels) ? normalizedResponse.labels : [];
+    const scores = Array.isArray(normalizedResponse?.scores) ? normalizedResponse.scores : [];
+
+    if (!labels.length) {
+      return [this.classifyTopicCategory(topic)];
+    }
+
+    const ranked = labels
+      .map((label, index) => ({ label, score: typeof scores[index] === 'number' ? scores[index] : 0 }))
+      .sort((a, b) => b.score - a.score);
+
+    const selected = ranked
+      .filter((entry, index) => index === 0 || entry.score >= 0.25)
+      .slice(0, 3)
+      .map((entry) => this.mapCandidateLabelToCategory(entry.label));
+
+    const categories = Array.from(new Set(selected)).filter((category) => category.length > 0);
+    const inferred = this.classifyTopicCategory(topic);
+
+    if (!categories.length) {
+      return [inferred];
+    }
+
+    if (categories.length === 1 && categories[0] === 'General' && inferred !== 'General') {
+      return [inferred];
+    }
+
+    return categories;
+  }
+
+  private mapCandidateLabelToCategory(label: string): string {
+    const normalizedLabel = this.normalizeText(label);
+    const found = this.classificationCandidates.find((item) => this.normalizeText(item.label) === normalizedLabel);
+    if (found) {
+      return found.category;
+    }
+
+    return this.sanitizeGeneratedCategory(label);
+  }
+
+  private buildClassificationInput(topic: string, questions: QuizQuestion[]): string {
+    const sampleQuestions = questions
+      .slice(0, 4)
+      .map((question, index) => `Q${index + 1}: ${question.question}`)
+      .join(' | ');
+
+    return `Tema: ${topic}. Preguntas: ${sampleQuestions}`;
+  }
+
+  private buildImagePrompt(quiz: GeneratedQuiz): string {
+    const hints = quiz.questions
+      .slice(0, 3)
+      .map((question) => question.question)
+      .join(' | ');
+
+    return [
+      `Ilustracion educativa estilo retro escolar moderno sobre ${quiz.topic}.`,
+      `Categoria: ${quiz.category}. Dificultad: ${quiz.difficulty}.`,
+      `Elementos clave: ${hints}.`,
+      'High detail, cinematic lighting, clean composition, no text, no watermark.'
+    ].join(' ');
+  }
+
+  private blobToBase64Resized(blob: Blob, maxSize: number, quality: number): Promise<string | null> {
+    if (typeof window === 'undefined') {
+      return Promise.resolve(null);
+    }
+
+    return new Promise((resolve) => {
+      const objectUrl = URL.createObjectURL(blob);
+      const image = new Image();
+
+      image.onload = () => {
+        const width = image.naturalWidth;
+        const height = image.naturalHeight;
+        const scale = Math.min(1, maxSize / Math.max(width, height));
+        const targetWidth = Math.max(1, Math.round(width * scale));
+        const targetHeight = Math.max(1, Math.round(height * scale));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = targetWidth;
+        canvas.height = targetHeight;
+
+        const context = canvas.getContext('2d');
+        if (!context) {
+          URL.revokeObjectURL(objectUrl);
+          resolve(null);
+          return;
+        }
+
+        context.drawImage(image, 0, 0, targetWidth, targetHeight);
+        const encoded = canvas.toDataURL('image/jpeg', quality);
+        URL.revokeObjectURL(objectUrl);
+        resolve(encoded);
+      };
+
+      image.onerror = () => {
+        URL.revokeObjectURL(objectUrl);
+        resolve(null);
+      };
+
+      image.src = objectUrl;
+    });
+  }
+
+  private sanitizeGeneratedTitle(candidate: string | null, fallbackTopic: string, difficulty: Difficulty): string {
+    const base = (candidate ?? fallbackTopic)
+      .replace(/^((un|una)\s+)?(quiz|test|cuestionario|examen)\s*(sobre|de|about)?\s*/i, '')
+      .replace(/\s+/g, ' ')
+      .replace(/^[,.;:\-\s]+|[,.;:\-\s]+$/g, '')
+      .trim();
+
+    if (!base) {
+      return this.buildDeterministicTitle(fallbackTopic || 'cultura general', difficulty);
+    }
+
+    const words = base.split(' ').filter((word) => word.length > 0);
+    const trimmedWords = words.slice(0, 12);
+
+    if (trimmedWords.length < 2) {
+      return this.buildDeterministicTitle(fallbackTopic || base, difficulty);
+    }
+
+    const candidateTitle = trimmedWords.join(' ');
+
+    if (candidateTitle.length < 10) {
+      return this.buildDeterministicTitle(fallbackTopic || base, difficulty);
+    }
+
+    if (/\b(de|del|la|el|y|en|para|sobre|con|por)$/i.test(candidateTitle)) {
+      return this.buildDeterministicTitle(fallbackTopic || base, difficulty);
+    }
+
+    return this.capitalizeSentence(candidateTitle);
+  }
+
+  private sanitizeGeneratedCategory(candidate: string | null): string {
+    if (!candidate) {
+      return 'General';
+    }
+
+    const normalized = this.normalizeText(candidate);
+
+    if (normalized.includes('dato') || normalized.includes('data')) {
+      return 'Datos';
+    }
+
+    if (normalized.includes('program')) {
+      return 'Programacion';
+    }
+
+    if (normalized.includes('science') || normalized.includes('ciencia')) {
+      return 'Ciencias';
+    }
+
+    if (normalized.includes('math') || normalized.includes('mate')) {
+      return 'Matematicas';
+    }
+
+    if (normalized.includes('history') || normalized.includes('historia')) {
+      return 'Historia';
+    }
+
+    if (normalized.includes('filosof') || normalized.includes('fisolof') || normalized.includes('philosophy')) {
+      return 'Filosofia';
+    }
+
+    if (normalized.includes('geography') || normalized.includes('geografia')) {
+      return 'Geografia';
+    }
+
+    if (normalized.includes('language') || normalized.includes('idioma') || normalized.includes('lengua')) {
+      return 'Lengua';
+    }
+
+    if (normalized.includes('business') || normalized.includes('negocio') || normalized.includes('empresa')) {
+      return 'Negocios';
+    }
+
+    if (normalized.includes('arte') || normalized.includes('music') || normalized.includes('literat')) {
+      return 'Arte';
+    }
+
+    if (normalized.includes('tecno') || normalized.includes('comput') || normalized.includes('software')) {
+      return 'Tecnologia';
+    }
+
+    if (
+      normalized.includes('juego') ||
+      normalized.includes('gaming') ||
+      normalized.includes('gamer') ||
+      normalized.includes('videojuego') ||
+      normalized.includes('pc game')
+    ) {
+      return 'Tecnologia';
+    }
+
+    if (
+      normalized.includes('espacio') ||
+      normalized.includes('space') ||
+      normalized.includes('astronomy') ||
+      normalized.includes('astronomia') ||
+      normalized.includes('cosmos') ||
+      normalized.includes('universo')
+    ) {
+      return 'Ciencias';
+    }
+
+    return 'General';
+  }
+
+  private sanitizeGeneratedCategories(candidate: unknown, topic: string): string[] {
+    const rawValues: string[] = [];
+
+    if (Array.isArray(candidate)) {
+      for (const value of candidate) {
+        if (typeof value === 'string' && value.trim().length > 0) {
+          rawValues.push(value.trim());
+        }
+      }
+    } else if (typeof candidate === 'string') {
+      rawValues.push(
+        ...candidate
+          .split(/,|\||;/)
+          .map((part) => part.trim())
+          .filter((part) => part.length > 0)
+      );
+    }
+
+    const normalized = Array.from(
+      new Set(
+        rawValues
+          .map((value) => this.sanitizeGeneratedCategory(value))
+          .filter((value) => value.length > 0)
+      )
+    ).slice(0, 3);
+
+    const inferred = this.classifyTopicCategory(topic);
+
+    if (!normalized.length) {
+      return [inferred];
+    }
+
+    if (normalized.length === 1 && normalized[0] === 'General' && inferred !== 'General') {
+      return [inferred];
+    }
+
+    return normalized;
+  }
+
+  private normalizeText(value: string): string {
+    return value
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+  }
+
+  private capitalizeSentence(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return trimmed;
+    }
+
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  }
+
+  private buildDeterministicTitle(topic: string, difficulty: Difficulty): string {
+    const cleanedTopic = topic.replace(/\s+/g, ' ').trim();
+    const finalTopic = cleanedTopic || 'cultura general';
+    const difficultyLabel: Record<Difficulty, string> = {
+      easy: 'Facil',
+      normal: 'Normal',
+      hard: 'Avanzado'
+    };
+
+    const normalizedTopic = this.capitalizeSentence(
+      finalTopic
+        .replace(/^(quiz|test|cuestionario|examen)\s+(sobre|de|about)\s+/i, '')
+        .replace(/\b(quiz|test|cuestionario|examen)\b\s*(sobre|de)?\s*/gi, '')
+        .replace(/\s+/g, ' ')
+        .trim()
+    );
+
+    return `Test ${difficultyLabel[difficulty]} ${normalizedTopic || 'Cultura general'}`.trim();
+  }
+
+  private classifyTopicCategory(topic: string): string {
+    const normalized = this.normalizeText(topic);
+
+    if (/(historia|guerra|imperio|revoluci|edad media|renacimiento)/.test(normalized)) {
+      return 'Historia';
+    }
+
+    if (/(filosof|fisolof|platon|aristot|nietzsche|etica|metafisica|epistem)/.test(normalized)) {
+      return 'Filosofia';
+    }
+
+    if (/(program|software|inform|comput|internet|algorit|base de datos|codigo)/.test(normalized)) {
+      return 'Tecnologia';
+    }
+
+    if (/(juego|juegos|videojuego|gaming|gamer|steam|playstation|xbox|nintendo|pc\b|e-sports|esports)/.test(normalized)) {
+      return 'Tecnologia';
+    }
+
+    if (/(datos|data|analitica|analisis de datos|big data|machine learning)/.test(normalized)) {
+      return 'Datos';
+    }
+
+    if (/(arte|pintura|musica|teatro|literatura|cine)/.test(normalized)) {
+      return 'Arte';
+    }
+
+    if (/(geografia|pais|capital|continente|mapa)/.test(normalized)) {
+      return 'Geografia';
+    }
+
+    if (/(ciencia|fisica|quimica|biologia|astronomia)/.test(normalized)) {
+      return 'Ciencias';
+    }
+
+    if (/(espacio|space|cosmos|universo|galax|planeta|nasa|astronaut|orbita|estelar)/.test(normalized)) {
+      return 'Ciencias';
+    }
+
+    if (/(matemat|algebra|calculo|estadistica)/.test(normalized)) {
+      return 'Matematicas';
+    }
+
+    if (/(idioma|lengua|gramatica|ingles|espanol|frances)/.test(normalized)) {
+      return 'Lengua';
+    }
+
+    if (/(negocio|empresa|marketing|finanzas|economia)/.test(normalized)) {
+      return 'Negocios';
+    }
+
+    return 'General';
+  }
+
+  private buildLocalQuiz(topic: string, difficulty: Difficulty, questionCount: number): GeneratedQuiz {
+    const mainCategory = this.classifyTopicCategory(topic);
+
+    return {
+      topic: this.buildDeterministicTitle(topic, difficulty),
+      originalTopic: topic,
+      category: mainCategory,
+      categories: [mainCategory],
       difficulty,
       source: 'local',
       model: 'local-fallback',
@@ -370,21 +1093,21 @@ export class HuggingfaceService {
 
   private createQuestion(topic: string, difficulty: Difficulty, index: number): QuizQuestion {
     const focusByDifficulty: Record<Difficulty, string> = {
-      easy: 'basic ideas',
-      normal: 'core concepts',
-      hard: 'advanced details'
+      easy: 'ideas basicas',
+      normal: 'conceptos clave',
+      hard: 'detalles avanzados'
     };
 
     const focus = focusByDifficulty[difficulty];
-    const topicLabel = topic.charAt(0).toUpperCase() + topic.slice(1);
+    const topicLabel = this.capitalizeSentence(topic);
 
     return {
-      question: `Question ${index}: What best describes ${topicLabel} when focusing on ${focus}?`,
+      question: `Pregunta ${index}: Que describe mejor ${topicLabel} al enfocarse en ${focus}?`,
       options: [
-        `${topicLabel} option A`,
-        `${topicLabel} option B`,
-        `${topicLabel} option C`,
-        `${topicLabel} option D`
+        `${topicLabel} opcion A`,
+        `${topicLabel} opcion B`,
+        `${topicLabel} opcion C`,
+        `${topicLabel} opcion D`
       ],
       correctIndex: (index - 1) % 4
     };

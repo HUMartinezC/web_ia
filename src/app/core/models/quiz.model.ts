@@ -8,6 +8,10 @@ export interface QuizQuestion {
 
 export interface GeneratedQuiz {
   topic: string;
+  originalTopic?: string;
+  category: string;
+  categories: string[];
+  coverImageBase64?: string;
   difficulty: Difficulty;
   questions: QuizQuestion[];
   source: 'local' | 'huggingface';
@@ -18,4 +22,14 @@ export interface QuizGenerationRequest {
   topic: string;
   difficulty: Difficulty;
   questionCount?: number;
+}
+
+export interface QuizSession {
+  id: string;
+  quiz: GeneratedQuiz;
+  answers: number[];
+  currentQuestionIndex: number;
+  isSubmitted: boolean;
+  score: number | null;
+  updatedAt: string;
 }
