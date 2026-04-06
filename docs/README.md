@@ -38,7 +38,7 @@ If the API remains disabled, the app uses the local quiz fallback.
 The project is configured for Vercel with:
 - Angular static build output: `dist/quizai/browser`
 - SPA fallback rewrite to `index.html`
-- Serverless proxy at `api/hf.ts` for Hugging Face calls
+- Serverless proxy at `api/hf.js` for Hugging Face calls
 
 Required Vercel environment variable:
 - `HF_API_TOKEN` (Project Settings -> Environment Variables)
