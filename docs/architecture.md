@@ -25,3 +25,8 @@ This keeps navigation stable while the feature pages are built in later phases.
 
 The generate screen currently uses local state and a simulated delay to preview quiz output.
 This keeps the UI functional before wiring the Hugging Face API in the next phase.
+
+## Hugging Face integration
+
+The generation service posts prompts to the Hugging Face Inference API using a configurable model id and bearer token.
+If the API is disabled or unavailable, the service falls back to a deterministic local quiz builder so the UI remains usable.

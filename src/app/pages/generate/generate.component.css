@@ -135,6 +135,12 @@ input:focus {
   line-height: 1.5;
 }
 
+.model-status {
+  margin: -0.5rem 0 0;
+  color: var(--accent);
+  font-size: 0.9rem;
+}
+
 .preview-panel {
   display: grid;
   gap: 1rem;

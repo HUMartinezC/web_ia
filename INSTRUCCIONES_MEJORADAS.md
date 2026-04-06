@@ -37,7 +37,7 @@ Este documento es tu **referencia principal y permanente** durante todo el desar
 - [x] Estructura de carpetas implementada
 - [x] Sidebar y layout base
 - [x] Página `/generate` funcional
-- [ ] Integración Hugging Face Modelo 1 (generación)
+- [x] Integración Hugging Face Modelo 1 (generación)
 - [ ] Página `/quiz/:id` funcional
 - [ ] Persistencia en `localStorage`
 - [ ] Integración Hugging Face Modelo 2 (clasificación)

@@ -34,6 +34,7 @@
       </button>
 
       <p class="status-message">{{ statusMessage() }}</p>
+      <p class="model-status">{{ modelStatus() }}</p>
     </section>
 
     <section class="panel preview-panel">
@@ -64,7 +65,7 @@
 
       <ng-template #emptyState>
         <p class="empty-state">
-          Your generated quiz will appear here. The local generator currently creates a 5-question preview.
+          Your generated quiz will appear here. The local generator remains available as a fallback when Hugging Face is not configured.
         </p>
       </ng-template>
     </section>

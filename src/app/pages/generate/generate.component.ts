@@ -1,19 +1,8 @@
 import { CommonModule } from '@angular/common';
-import { Component, computed, signal } from '@angular/core';
+import { Component, computed, inject, signal } from '@angular/core';
 
-type Difficulty = 'easy' | 'normal' | 'hard';
-
-interface QuizQuestion {
-  question: string;
-  options: string[];
-  correctIndex: number;
-}
-
-interface GeneratedQuiz {
-  topic: string;
-  difficulty: Difficulty;
-  questions: QuizQuestion[];
-}
+import { HuggingfaceService } from '../../core/services/huggingface.service';
+import { Difficulty, GeneratedQuiz } from '../../core/models/quiz.model';
 
 @Component({
   selector: 'app-generate',
@@ -23,11 +12,14 @@ interface GeneratedQuiz {
   styleUrl: './generate.component.css'
 })
 export class GenerateComponent {
+  private readonly huggingFaceService = inject(HuggingfaceService);
+
   readonly topic = signal('');
   readonly difficulty = signal<Difficulty>('normal');
   readonly isGenerating = signal(false);
   readonly generatedQuiz = signal<GeneratedQuiz | null>(null);
   readonly statusMessage = signal('Ready to generate a quiz preview.');
+  readonly modelStatus = signal('Model: local fallback ready');
 
   readonly canGenerate = computed(() => this.topic().trim().length >= 3 && !this.isGenerating());
 
@@ -39,7 +31,7 @@ export class GenerateComponent {
     this.difficulty.set(value);
   }
 
-  generateQuiz(): void {
+  async generateQuiz(): Promise<void> {
     const topic = this.topic().trim();
 
     if (topic.length < 3) {
@@ -48,48 +40,26 @@ export class GenerateComponent {
     }
 
     this.isGenerating.set(true);
-    this.statusMessage.set('Generating quiz preview...');
+    this.statusMessage.set('Generating quiz with Hugging Face...');
 
-    window.setTimeout(() => {
-      this.generatedQuiz.set(this.buildQuiz(topic, this.difficulty()));
+    try {
+      const quiz = await this.huggingFaceService.generateQuiz({
+        topic,
+        difficulty: this.difficulty()
+      });
+
+      this.generatedQuiz.set(quiz);
+      this.modelStatus.set(quiz.source === 'huggingface' ? `Model: ${quiz.model}` : 'Model: local fallback ready');
+      this.statusMessage.set(
+        quiz.source === 'huggingface'
+          ? 'Quiz generated with Hugging Face. Preview is ready.'
+          : 'Hugging Face is not configured, so the local fallback preview was used.'
+      );
+    } catch (error) {
+      this.statusMessage.set(error instanceof Error ? error.message : 'Unable to generate quiz.');
+      this.modelStatus.set('Model: generation failed');
+    } finally {
       this.isGenerating.set(false);
-      this.statusMessage.set('Preview ready. Replace this local generator with Hugging Face in the next phase.');
-    }, 650);
-  }
-
-  private buildQuiz(topic: string, difficulty: Difficulty): GeneratedQuiz {
-    return {
-      topic,
-      difficulty,
-      questions: [
-        this.createQuestion(topic, difficulty, 1),
-        this.createQuestion(topic, difficulty, 2),
-        this.createQuestion(topic, difficulty, 3),
-        this.createQuestion(topic, difficulty, 4),
-        this.createQuestion(topic, difficulty, 5)
-      ]
-    };
-  }
-
-  private createQuestion(topic: string, difficulty: Difficulty, index: number): QuizQuestion {
-    const focusByDifficulty: Record<Difficulty, string> = {
-      easy: 'basic ideas',
-      normal: 'core concepts',
-      hard: 'advanced details'
-    };
-
-    const focus = focusByDifficulty[difficulty];
-    const topicLabel = topic.charAt(0).toUpperCase() + topic.slice(1);
-
-    return {
-      question: `Question ${index}: What best describes ${topicLabel} when focusing on ${focus}?`,
-      options: [
-        `${topicLabel} option A`,
-        `${topicLabel} option B`,
-        `${topicLabel} option C`,
-        `${topicLabel} option D`
-      ],
-      correctIndex: (index - 1) % 4
-    };
+    }
   }
 }
