@@ -2,11 +2,6 @@
 
 Este archivo guarda los prompts en bruto, organizados por fases y en orden cronológico.
 
-Notas:
-- Se conserva el texto literal en la medida de lo posible.
-- Los fragmentos de código y JSON se mantienen en bloques preformateados.
-- Si quieres una versión 100% literal palabra por palabra de todo el historial, hace falta exportar el chat original completo.
-
 ## 1) Inicio de la conversación de trabajo
 
 > Utilizando INSTRUCCIONES_MEJORADAS.md, genera todo lo necesario para el proyecto. La idea es que identifiques cada apartado, y por cada uno esperes mi confirmación para continuar con la siguiente tarea/implementación.
